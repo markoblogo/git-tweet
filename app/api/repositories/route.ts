@@ -7,5 +7,11 @@ export async function GET() {
     orderBy: { fullName: "asc" }
   });
 
-  return NextResponse.json({ repositories });
+  return NextResponse.json({
+    repositories: repositories.map((repo) => ({
+      ...repo,
+      supported: !repo.isPrivate,
+      visibility: repo.isPrivate ? "private" : "public"
+    }))
+  });
 }

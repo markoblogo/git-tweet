@@ -12,9 +12,9 @@ describe("x-connection env behavior", () => {
     process.env = originalEnv;
   });
 
-  it("defaults to manual_env mode", () => {
+  it("defaults to oauth mode", () => {
     delete process.env.X_CONNECTION_MODE;
-    expect(currentXConnectionMode()).toBe("manual_env");
+    expect(currentXConnectionMode()).toBe("oauth");
   });
 
   it("detects manual credentials from env", () => {

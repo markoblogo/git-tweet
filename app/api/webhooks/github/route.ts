@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { handleReleasePublished, handleTagCreated } from "@/lib/services/github-ingestion";
 import { verifyGitHubSignature } from "@/lib/services/github-webhook-auth";
+import type { GitHubCreateTagPayload, GitHubReleasePayload } from "@/types/events";
 
 const releaseSchema = z.object({
   action: z.string(),
@@ -48,13 +49,13 @@ export async function POST(request: Request) {
   try {
     if (eventType === "release") {
       const parsed = releaseSchema.parse(body);
-      await handleReleasePublished(parsed);
+      await handleReleasePublished(parsed as GitHubReleasePayload);
       return NextResponse.json({ ok: true, accepted: "release" });
     }
 
     if (eventType === "create") {
       const parsed = createSchema.parse(body);
-      await handleTagCreated(parsed);
+      await handleTagCreated(parsed as GitHubCreateTagPayload);
       return NextResponse.json({ ok: true, accepted: "create" });
     }
   } catch (error) {

@@ -5,6 +5,7 @@ export type GitHubReleasePayload = {
     name: string;
     full_name: string;
     html_url: string;
+    private?: boolean;
     topics?: string[];
     owner: {
       login: string;
@@ -28,6 +29,7 @@ export type GitHubCreateTagPayload = {
     name: string;
     full_name: string;
     html_url: string;
+    private?: boolean;
     topics?: string[];
     owner: {
       login: string;

@@ -6,8 +6,11 @@ const activationSchema = z.object({
   isActive: z.boolean()
 });
 
-export async function PATCH(request: Request, context: { params: { repositoryId: string } }) {
-  const repositoryId = context.params.repositoryId;
+export async function PATCH(
+  request: Request,
+  context: { params: Promise<{ repositoryId: string }> }
+) {
+  const { repositoryId } = await context.params;
   if (!repositoryId) {
     return NextResponse.json({ ok: false, error: "repositoryId is required" }, { status: 400 });
   }
@@ -24,9 +27,19 @@ export async function PATCH(request: Request, context: { params: { repositoryId:
     return NextResponse.json({ ok: false, error: "Invalid activation payload" }, { status: 400 });
   }
 
-  const repo = await prisma.repository.findUnique({ where: { id: repositoryId }, select: { id: true } });
+  const repo = await prisma.repository.findUnique({
+    where: { id: repositoryId },
+    select: { id: true, isPrivate: true }
+  });
   if (!repo) {
     return NextResponse.json({ ok: false, error: "Repository not found" }, { status: 404 });
+  }
+
+  if (repo.isPrivate && parsed.data.isActive) {
+    return NextResponse.json(
+      { ok: false, error: "Private repositories are unsupported for posting" },
+      { status: 400 }
+    );
   }
 
   const settings = await prisma.repositorySettings.upsert({

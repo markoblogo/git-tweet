@@ -61,6 +61,7 @@ model Repository {
   fullName    String             @unique
   htmlUrl     String
   defaultBranch String
+  isPrivate   Boolean            @default(false)
   topics      String[]
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
@@ -68,6 +69,18 @@ model Repository {
   events      Event[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OAuthState {
+  id          String    @id @default(cuid())
+  provider    Provider
+  state       String    @unique
+  redirectUri String
+  codeVerifier String?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  @@index([provider, createdAt])
 }
 
 model RepositorySettings {

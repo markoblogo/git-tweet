@@ -1,12 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildXClient } from "@/lib/services/x-client";
 
-describe("x-client manual_env", () => {
+describe("x-client oauth/manual modes", () => {
   const originalEnv = process.env;
 
   beforeEach(() => {
     process.env = { ...originalEnv };
-    process.env.X_CONNECTION_MODE = "manual_env";
+    process.env.X_CONNECTION_MODE = "oauth";
     process.env.X_API_BASE_URL = "https://api.x.test/2";
     vi.restoreAllMocks();
   });
@@ -15,9 +15,7 @@ describe("x-client manual_env", () => {
     process.env = originalEnv;
   });
 
-  it("returns NOT_CONNECTED when token is missing", async () => {
-    delete process.env.X_ACCESS_TOKEN;
-
+  it("returns NOT_CONNECTED in oauth mode when token is missing", async () => {
     const result = await buildXClient().publishPost({ text: "hello" });
     expect(result.ok).toBe(false);
     if (!result.ok) {
@@ -25,8 +23,7 @@ describe("x-client manual_env", () => {
     }
   });
 
-  it("posts successfully when API returns tweet id", async () => {
-    process.env.X_ACCESS_TOKEN = "token";
+  it("posts successfully when explicit token and API returns tweet id", async () => {
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -36,12 +33,11 @@ describe("x-client manual_env", () => {
       })
     );
 
-    const result = await buildXClient().publishPost({ text: "hello" });
+    const result = await buildXClient().publishPost({ text: "hello", accessToken: "oauth-token" });
     expect(result).toEqual({ ok: true, externalId: "19001" });
   });
 
   it("maps 401 to AUTH_ERROR", async () => {
-    process.env.X_ACCESS_TOKEN = "token";
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -51,7 +47,7 @@ describe("x-client manual_env", () => {
       })
     );
 
-    const result = await buildXClient().publishPost({ text: "hello" });
+    const result = await buildXClient().publishPost({ text: "hello", accessToken: "oauth-token" });
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.code).toBe("AUTH_ERROR");

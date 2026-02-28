@@ -1,12 +1,19 @@
-export function evaluateRepositoryActivation(settings?: { isActive: boolean } | null): {
+export function evaluateRepositoryActivation(params: {
+  settings?: { isActive: boolean } | null;
+  isPrivate: boolean;
+}): {
   canPost: boolean;
   reason?: string;
 } {
-  if (!settings) {
+  if (params.isPrivate) {
+    return { canPost: false, reason: "repository_private_unsupported" };
+  }
+
+  if (!params.settings) {
     return { canPost: false, reason: "repository_settings_missing" };
   }
 
-  if (!settings.isActive) {
+  if (!params.settings.isActive) {
     return { canPost: false, reason: "repository_inactive" };
   }
 

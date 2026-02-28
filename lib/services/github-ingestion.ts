@@ -14,6 +14,7 @@ async function ensureRepository(payload: {
   fullName: string;
   htmlUrl: string;
   topics: string[];
+  isPrivate: boolean;
 }) {
   const fallbackUser = await prisma.user.upsert({
     where: { email: "local-owner@example.com" },
@@ -28,7 +29,8 @@ async function ensureRepository(payload: {
       name: payload.name,
       fullName: payload.fullName,
       htmlUrl: payload.htmlUrl,
-      topics: payload.topics
+      topics: payload.topics,
+      isPrivate: payload.isPrivate
     },
     create: {
       userId: fallbackUser.id,
@@ -38,6 +40,7 @@ async function ensureRepository(payload: {
       fullName: payload.fullName,
       htmlUrl: payload.htmlUrl,
       topics: payload.topics,
+      isPrivate: payload.isPrivate,
       defaultBranch: "main",
       settings: {
         create: {
@@ -142,7 +145,8 @@ export async function handleReleasePublished(payload: GitHubReleasePayload): Pro
     name: payload.repository.name,
     fullName: payload.repository.full_name,
     htmlUrl: payload.repository.html_url,
-    topics: payload.repository.topics ?? []
+    topics: payload.repository.topics ?? [],
+    isPrivate: payload.repository.private ?? false
   });
 
   if (!repo.settings?.isActive) {
@@ -171,7 +175,10 @@ export async function handleReleasePublished(payload: GitHubReleasePayload): Pro
     return;
   }
 
-  const activation = evaluateRepositoryActivation(repo.settings);
+  const activation = evaluateRepositoryActivation({
+    settings: repo.settings,
+    isPrivate: repo.isPrivate
+  });
   if (!activation.canPost) {
     await saveSkippedPolicy({
       eventId: base.eventId,
@@ -271,7 +278,8 @@ export async function handleTagCreated(payload: GitHubCreateTagPayload): Promise
     name: payload.repository.name,
     fullName: payload.repository.full_name,
     htmlUrl: payload.repository.html_url,
-    topics: payload.repository.topics ?? []
+    topics: payload.repository.topics ?? [],
+    isPrivate: payload.repository.private ?? false
   });
 
   // Conservative policy: if release event already exists for same semver tag, skip VERSION_TAG post.
@@ -309,7 +317,10 @@ export async function handleTagCreated(payload: GitHubCreateTagPayload): Promise
     return;
   }
 
-  const activation = evaluateRepositoryActivation(repo.settings);
+  const activation = evaluateRepositoryActivation({
+    settings: repo.settings,
+    isPrivate: repo.isPrivate
+  });
   if (!activation.canPost) {
     await saveSkippedPolicy({
       eventId: created.eventId,

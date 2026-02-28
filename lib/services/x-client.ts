@@ -18,7 +18,7 @@ export type XClient = {
 };
 
 function connectionMode() {
-  return (process.env.X_CONNECTION_MODE ?? "manual_env").toLowerCase();
+  return (process.env.X_CONNECTION_MODE ?? "oauth").toLowerCase();
 }
 
 function resolveAccessToken(explicitToken?: string | null): string | null {
@@ -72,7 +72,7 @@ export function buildXClient(): XClient {
         };
       }
 
-      if (connectionMode() !== "manual_env") {
+      if (connectionMode() !== "manual_env" && connectionMode() !== "oauth") {
         return {
           ok: false,
           code: "NOT_IMPLEMENTED",
@@ -85,7 +85,10 @@ export function buildXClient(): XClient {
         return {
           ok: false,
           code: "NOT_CONNECTED",
-          message: "X account is not connected. Set X_ACCESS_TOKEN and sync /connect/x."
+          message:
+            connectionMode() === "manual_env"
+              ? "X account is not connected. Set X_ACCESS_TOKEN and sync /connect/x."
+              : "X account is not connected. Use /connect/x OAuth flow."
         };
       }
 

@@ -1,22 +1,13 @@
 import { Provider } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
-
-const FALLBACK_USER_EMAIL = "local-owner@example.com";
+import { ensureOwnerUser } from "@/lib/services/owner-user";
 
 export function currentXConnectionMode(): string {
-  return (process.env.X_CONNECTION_MODE ?? "manual_env").toLowerCase();
+  return (process.env.X_CONNECTION_MODE ?? "oauth").toLowerCase();
 }
 
 export function hasManualXCredentials(): boolean {
   return Boolean(process.env.X_ACCESS_TOKEN);
-}
-
-async function ensureLocalOwnerUser() {
-  return prisma.user.upsert({
-    where: { email: FALLBACK_USER_EMAIL },
-    update: {},
-    create: { email: FALLBACK_USER_EMAIL }
-  });
 }
 
 export async function syncManualXConnection(): Promise<{
@@ -40,7 +31,7 @@ export async function syncManualXConnection(): Promise<{
   }
 
   const providerUser = process.env.X_ACCOUNT_ID || process.env.X_ACCOUNT_USERNAME || "manual-env-account";
-  const user = await ensureLocalOwnerUser();
+  const user = await ensureOwnerUser();
 
   await prisma.connectedAccount.upsert({
     where: {
@@ -73,17 +64,22 @@ export async function getXConnectionState() {
     orderBy: { updatedAt: "desc" }
   });
 
+  const canPost = mode === "manual_env"
+    ? envConfigured || Boolean(account?.accessToken)
+    : Boolean(account?.accessToken);
+
   return {
     mode,
     envConfigured,
-    canPost: mode === "manual_env" && (envConfigured || Boolean(account?.accessToken)),
+    canPost,
     account: account
       ? {
           providerUser: account.providerUser,
           updatedAt: account.updatedAt.toISOString(),
-          hasAccessToken: Boolean(account.accessToken)
+          hasAccessToken: Boolean(account.accessToken),
+          expiresAt: account.expiresAt ? account.expiresAt.toISOString() : null
         }
       : null,
-    reason: !envConfigured && !account ? "No X credentials configured yet" : null
+    reason: canPost ? null : mode === "manual_env" ? "No X credentials configured yet" : "X OAuth is not connected"
   };
 }

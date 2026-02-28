@@ -1,8 +1,21 @@
+export const dynamic = "force-dynamic";
+
+import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { getXConnectionState, syncManualXConnection } from "@/lib/services/x-connection";
 
-export default async function ConnectXPage() {
+type Props = {
+  searchParams?: Promise<{
+    connected?: string;
+    account?: string;
+    error?: string;
+    mode?: string;
+  }>;
+};
+
+export default async function ConnectXPage({ searchParams }: Props) {
   const state = await getXConnectionState();
+  const resolvedSearchParams = (await searchParams) ?? {};
 
   async function syncConnectionAction() {
     "use server";
@@ -13,25 +26,43 @@ export default async function ConnectXPage() {
   return (
     <section className="card">
       <h1>Connect X</h1>
-      <p>Current mode: <code>{state.mode}</code></p>
-      <p>Can post now: <strong>{state.canPost ? "yes" : "no"}</strong></p>
-      <p>Manual env credentials configured: <strong>{state.envConfigured ? "yes" : "no"}</strong></p>
+      <p>
+        Mode: <code>{state.mode}</code>
+      </p>
+      <p>
+        Status: <strong>{state.canPost ? "connected" : "not connected"}</strong>
+      </p>
       {state.account ? (
         <p>
-          Connected account: <code>{state.account.providerUser}</code> (updated {state.account.updatedAt})
+          Account id: <code>{state.account.providerUser}</code>
+          {state.account.expiresAt ? ` | token expires at ${state.account.expiresAt}` : ""}
         </p>
+      ) : null}
+
+      {resolvedSearchParams.connected === "1" ? (
+        <p><small>X connected successfully{resolvedSearchParams.account ? ` as ${resolvedSearchParams.account}` : ""}.</small></p>
+      ) : null}
+      {resolvedSearchParams.error ? <p><small>Error: {resolvedSearchParams.error}</small></p> : null}
+
+      {state.mode === "manual_env" ? (
+        <>
+          <form action={syncConnectionAction}>
+            <button type="submit">Sync X connection from env</button>
+          </form>
+          <small>
+            Manual fallback mode is active. Set `X_ACCESS_TOKEN`, then sync.
+          </small>
+        </>
       ) : (
-        <p>No connected account saved yet.</p>
+        <>
+          <p>
+            <Link href="/api/connect/x/start">{state.canPost ? "Reconnect X" : "Connect X"}</Link>
+          </p>
+          <small>
+            OAuth mode is active. Connection is persisted in `connected_accounts` and used by posting adapter.
+          </small>
+        </>
       )}
-      {state.reason ? <small>{state.reason}</small> : null}
-      <p>
-        <form action={syncConnectionAction}>
-          <button type="submit">Sync X connection from env</button>
-        </form>
-      </p>
-      <small>
-        Temporary MVP mode: `manual_env`. Set `X_ACCESS_TOKEN`, then sync. OAuth flow is postponed.
-      </small>
     </section>
   );
 }

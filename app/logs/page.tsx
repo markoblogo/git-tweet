@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { prisma } from "@/lib/db/prisma";
 import { rerunFailedPost } from "@/lib/services/post-rerun";
 import { revalidatePath } from "next/cache";
