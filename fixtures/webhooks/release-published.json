@@ -1,0 +1,21 @@
+{
+  "action": "published",
+  "repository": {
+    "id": 101,
+    "name": "git-tweet",
+    "full_name": "markoblogo/git-tweet",
+    "html_url": "https://github.com/markoblogo/git-tweet",
+    "topics": ["typescript", "dev-tools"],
+    "owner": {
+      "login": "markoblogo"
+    }
+  },
+  "release": {
+    "id": 5001,
+    "tag_name": "v1.0.0",
+    "published_at": "2026-02-28T10:00:00Z",
+    "html_url": "https://github.com/markoblogo/git-tweet/releases/tag/v1.0.0",
+    "draft": false,
+    "prerelease": false
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "git-tweet",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "replay:release": "node scripts/replay-webhook.mjs --event=release --fixture=fixtures/webhooks/release-published.json",
+    "replay:tag": "node scripts/replay-webhook.mjs --event=create --fixture=fixtures/webhooks/create-tag.json"
+  },
+  "dependencies": {
+    "@prisma/client": "5.22.0",
+    "next": "15.0.4",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "eslint": "8.57.1",
+    "eslint-config-next": "15.0.4",
+    "prisma": "5.22.0",
+    "typescript": "5.7.2",
+    "vitest": "2.1.8"
+  }
+}

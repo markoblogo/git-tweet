@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Provider {
+  GITHUB
+  X
+}
+
+enum EventType {
+  RELEASE_PUBLISHED
+  FIRST_PUBLIC_RELEASE
+  MAJOR_VERSION
+  VERSION_TAG
+}
+
+enum PostStatus {
+  POSTED
+  FAILED
+  SKIPPED_DUPLICATE
+  SKIPPED_POLICY
+}
+
+model User {
+  id                String              @id @default(cuid())
+  email             String?             @unique
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  connectedAccounts ConnectedAccount[]
+  repositories      Repository[]
+}
+
+model ConnectedAccount {
+  id           String   @id @default(cuid())
+  userId       String
+  provider     Provider
+  providerUser String
+  accessToken  String?
+  refreshToken String?
+  expiresAt    DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUser])
+  @@index([userId, provider])
+}
+
+model Repository {
+  id          String             @id @default(cuid())
+  userId      String
+  githubId    String             @unique
+  owner       String
+  name        String
+  fullName    String             @unique
+  htmlUrl     String
+  defaultBranch String
+  topics      String[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  settings    RepositorySettings?
+  events      Event[]
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RepositorySettings {
+  id           String   @id @default(cuid())
+  repositoryId String   @unique
+  isActive     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id           String    @id @default(cuid())
+  repositoryId String
+  type         EventType
+  sourceKey    String    @unique
+  releaseTag   String?
+  payload      Json
+  occurredAt   DateTime
+  createdAt    DateTime  @default(now())
+  posts        Post[]
+
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@index([repositoryId, occurredAt])
+  @@index([type, occurredAt])
+}
+
+model Post {
+  id          String     @id @default(cuid())
+  eventId      String
+  status      PostStatus
+  text        String
+  targetUrl   String
+  externalId  String?
+  error       String?
+  createdAt   DateTime   @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+}
