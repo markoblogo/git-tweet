@@ -216,6 +216,54 @@ Open:
 
 ---
 
+## Preflight checklist (make your posts look good)
+
+Before you publish your first release and let `git-tweet` post it, spend 2 minutes on repo presentation.  
+Most "ugly posts" come from missing repo metadata, not from `git-tweet`.
+
+### 1) Repository "About" fields (GitHub Repo details)
+
+In your repository sidebar (or Settings -> General), set:
+
+- **Description**: a short one-liner (used as fallback for the "what it is" line)
+- **Topics**: 6-10 relevant topics (used to generate 0-2 hashtags)
+- **Website** (optional): project page or docs link
+
+Tip: if Topics are empty, hashtags may be empty too.
+
+### 2) Social preview image (GitHub Open Graph)
+
+When posting a GitHub release/repo link, social networks typically use GitHub's **Social preview** image.
+
+Set it once:
+- Repo -> **Settings** -> **Social preview** -> upload a 1280x640 image (`assets/og.png` is a good default)
+
+This is what becomes the card thumbnail in X and other networks.
+
+### 3) Release hygiene
+
+For the best post quality, make releases meaningful:
+- Use semver tags (`v0.1.0`, `v1.0.0`, ...)
+- Add a short release title and a few bullet points in release notes
+
+`git-tweet` links to the release page, so readers land on the right context.
+
+### 4) Sync repositories after changes
+
+If you update repo description/topics, re-sync in `git-tweet`:
+- `/connect/github` -> **Sync repositories**
+
+That pulls updated description/topics into the local database and improves post output.
+
+### 5) Keep it low-noise
+
+Activate only the repos you want to post from:
+- `/repositories` -> activate selected public repos
+
+Newly discovered public repos are synced as **inactive** by default.
+
+---
+
 ## Real end-to-end test
 
 ### Why you need a tunnel
