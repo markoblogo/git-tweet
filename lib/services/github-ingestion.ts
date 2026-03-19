@@ -190,6 +190,21 @@ function releaseEventType(params: { releaseTag: string; existingPublishedRelease
   return EventType.RELEASE_PUBLISHED;
 }
 
+export function versionTagSkipReason(params: {
+  hasMatchingReleaseEvent: boolean;
+  repoHasReleaseHistory: boolean;
+}): string | null {
+  if (params.hasMatchingReleaseEvent) {
+    return "covered_by_release_published";
+  }
+
+  if (params.repoHasReleaseHistory) {
+    return "repository_prefers_release_signal";
+  }
+
+  return null;
+}
+
 export async function handleReleasePublished(payload: GitHubReleasePayload): Promise<void> {
   if (payload.action !== "published" || payload.release.draft || payload.release.prerelease) {
     return;
@@ -291,28 +306,6 @@ export async function handleTagCreated(payload: GitHubCreateTagPayload): Promise
     isPrivate: payload.repository.private ?? false
   });
 
-  // Conservative policy: if release event already exists for same semver tag, skip VERSION_TAG post.
-  const hasReleaseEvent = await prisma.event.findFirst({
-    where: {
-      repositoryId: repo.id,
-      type: {
-        in: [EventType.RELEASE_PUBLISHED, EventType.FIRST_PUBLIC_RELEASE, EventType.MAJOR_VERSION]
-      },
-      releaseTag: payload.ref
-    },
-    select: { id: true }
-  });
-
-  if (hasReleaseEvent) {
-    await saveSkippedPolicy({
-      eventId: hasReleaseEvent.id,
-      text: `Tag event skipped for ${repo.fullName}`,
-      targetUrl: repo.htmlUrl,
-      reason: "covered_by_release_published"
-    });
-    return;
-  }
-
   const sourceKey = `gh:repo:${payload.repository.id}:tag:${semver.normalized}`;
   const created = await emitEvent({
     repositoryId: repo.id,
@@ -325,6 +318,42 @@ export async function handleTagCreated(payload: GitHubCreateTagPayload): Promise
 
   if (created.skipped) {
     await saveSkippedDuplicate(created.eventId, duplicateSkipMessage(sourceKey), repo.htmlUrl);
+    return;
+  }
+
+  const hasReleaseEvent = await prisma.event.findFirst({
+    where: {
+      repositoryId: repo.id,
+      type: {
+        in: [EventType.RELEASE_PUBLISHED, EventType.FIRST_PUBLIC_RELEASE, EventType.MAJOR_VERSION]
+      },
+      releaseTag: payload.ref
+    },
+    select: { id: true }
+  });
+
+  const repoHasReleaseHistory = await prisma.event.findFirst({
+    where: {
+      repositoryId: repo.id,
+      type: {
+        in: [EventType.RELEASE_PUBLISHED, EventType.FIRST_PUBLIC_RELEASE, EventType.MAJOR_VERSION]
+      }
+    },
+    select: { id: true }
+  });
+
+  const skipReason = versionTagSkipReason({
+    hasMatchingReleaseEvent: Boolean(hasReleaseEvent),
+    repoHasReleaseHistory: Boolean(repoHasReleaseHistory)
+  });
+
+  if (skipReason) {
+    await saveSkippedPolicy({
+      eventId: created.eventId,
+      text: `Tag event skipped for ${repo.fullName}`,
+      targetUrl: repo.htmlUrl,
+      reason: skipReason
+    });
     return;
   }
 

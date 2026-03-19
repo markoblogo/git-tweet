@@ -51,6 +51,7 @@ Not supported (intentionally out of scope in this stage):
 A single release should produce **one** post:
 - `FIRST_PUBLIC_RELEASE` > `MAJOR_VERSION` > `RELEASE_PUBLISHED`
 - `TAG_ONLY` is used only when there is no release covering the same semver
+- For repositories that already use release publishing, semver tag posts are skipped conservatively to avoid duplicate social posts
 
 ### Post format
 Each post is structured for readability:
