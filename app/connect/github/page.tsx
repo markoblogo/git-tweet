@@ -2,12 +2,17 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { getGitHubConnectionState, syncGitHubRepositories } from "@/lib/services/github-client";
 
 type Props = {
   searchParams?: Promise<{
     connected?: string;
     error?: string;
+    sync?: string;
+    synced?: string;
+    publicRepos?: string;
+    privateRepos?: string;
   }>;
 };
 
@@ -18,12 +23,17 @@ export default async function ConnectGitHubPage({ searchParams }: Props) {
   async function syncAction() {
     "use server";
     try {
-      await syncGitHubRepositories();
+      const result = await syncGitHubRepositories();
+      revalidatePath("/connect/github");
+      revalidatePath("/repositories");
+      redirect(
+        `/connect/github?sync=1&synced=${result.synced}&publicRepos=${result.publicRepos}&privateRepos=${result.privateRepos}`
+      );
     } catch {
-      // Keep page stable; operator can inspect /logs and connection status.
+      revalidatePath("/connect/github");
+      revalidatePath("/repositories");
+      redirect("/connect/github?error=github_sync_failed");
     }
-    revalidatePath("/connect/github");
-    revalidatePath("/repositories");
   }
 
   return (
@@ -39,6 +49,14 @@ export default async function ConnectGitHubPage({ searchParams }: Props) {
       ) : null}
 
       {resolvedSearchParams.connected === "1" ? <p><small>GitHub connected successfully.</small></p> : null}
+      {resolvedSearchParams.sync === "1" ? (
+        <p>
+          <small>
+            Sync complete: {resolvedSearchParams.synced ?? "0"} repos imported, public {resolvedSearchParams.publicRepos ?? "0"},
+            private {resolvedSearchParams.privateRepos ?? "0"}.
+          </small>
+        </p>
+      ) : null}
       {resolvedSearchParams.error ? <p><small>Error: {resolvedSearchParams.error}</small></p> : null}
 
       <p>

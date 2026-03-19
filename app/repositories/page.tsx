@@ -25,6 +25,25 @@ function matchesFilter(params: { filter: string; isPrivate: boolean; isActive: b
   }
 }
 
+function filterHref(filter: string): string {
+  return filter === "all" ? "/repositories" : `/repositories?filter=${filter}`;
+}
+
+function filterLabel(filter: string): string {
+  switch (filter) {
+    case "public":
+      return "public";
+    case "private":
+      return "private";
+    case "active":
+      return "active";
+    case "inactive":
+      return "inactive";
+    default:
+      return "all";
+  }
+}
+
 export default async function RepositoriesPage({ searchParams }: Props) {
   async function toggleRepositoryActivation(formData: FormData) {
     "use server";
@@ -74,14 +93,25 @@ export default async function RepositoriesPage({ searchParams }: Props) {
       <h1>Repositories</h1>
       <p>Select repositories where git-tweet is active (public repositories only).</p>
       <p>
-        Filters: <Link href="/repositories">all</Link> | <Link href="/repositories?filter=public">public</Link> |{" "}
-        <Link href="/repositories?filter=private">private</Link> | <Link href="/repositories?filter=active">active</Link> |{" "}
-        <Link href="/repositories?filter=inactive">inactive</Link>
+        Current filter: <strong>{filterLabel(filter)}</strong>
+      </p>
+      <p>
+        Filters:{" "}
+        {["all", "public", "private", "active", "inactive"].map((item, index) => (
+          <span key={item}>
+            {index > 0 ? " | " : null}
+            {item === filter ? (
+              <strong>{filterLabel(item)}</strong>
+            ) : (
+              <Link href={filterHref(item)}>{filterLabel(item)}</Link>
+            )}
+          </span>
+        ))}
       </p>
       {filtered.length === 0 ? (
         <div className="card">
           <p>No repositories match this filter.</p>
-          <small>Use GitHub connect flow and sync repositories.</small>
+          <small>Use GitHub connect flow and sync repositories. New repositories stay inactive by default.</small>
         </div>
       ) : (
         filtered.map((repo) => {

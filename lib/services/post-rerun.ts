@@ -1,6 +1,6 @@
 import { PostStatus } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
-import { postToXOrFail } from "@/lib/services/posting";
+import { publishToX } from "@/lib/services/posting";
 
 function latestXAccessToken(
   accounts: Array<{ provider: string; accessToken: string | null; updatedAt: Date }>
@@ -20,6 +20,7 @@ export async function rerunFailedPost(postId: string): Promise<{
   ok: boolean;
   reason?: string;
   newStatus?: PostStatus;
+  externalId?: string;
 }> {
   const post = await prisma.post.findUnique({
     where: { id: postId },
@@ -49,13 +50,24 @@ export async function rerunFailedPost(postId: string): Promise<{
   }
 
   const xAccessToken = latestXAccessToken(post.event.repository.user.connectedAccounts);
-  await postToXOrFail({
-    eventId: post.eventId,
+  const mapped = await publishToX({
     text: post.text,
-    targetUrl: post.targetUrl,
     warning: `manual_rerun_from:${post.id}`,
     xAccessToken
   });
 
-  return { ok: true, newStatus: PostStatus.POSTED };
+  await prisma.post.update({
+    where: { id: post.id },
+    data: {
+      status: mapped.status,
+      externalId: mapped.externalId ?? null,
+      error: mapped.error ?? null
+    }
+  });
+
+  return {
+    ok: true,
+    newStatus: mapped.status,
+    externalId: mapped.externalId
+  };
 }

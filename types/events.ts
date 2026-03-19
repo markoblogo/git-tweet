@@ -5,6 +5,7 @@ export type GitHubReleasePayload = {
     name: string;
     full_name: string;
     html_url: string;
+    description?: string | null;
     private?: boolean;
     topics?: string[];
     owner: {
@@ -16,6 +17,8 @@ export type GitHubReleasePayload = {
     tag_name: string;
     published_at: string;
     html_url: string;
+    name?: string | null;
+    body?: string | null;
     draft: boolean;
     prerelease: boolean;
   };
@@ -29,6 +32,7 @@ export type GitHubCreateTagPayload = {
     name: string;
     full_name: string;
     html_url: string;
+    description?: string | null;
     private?: boolean;
     topics?: string[];
     owner: {

@@ -3,17 +3,34 @@ export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/db/prisma";
 import { rerunFailedPost } from "@/lib/services/post-rerun";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
-export default async function LogsPage() {
+type Props = {
+  searchParams?: Promise<{
+    rerun?: string;
+    postId?: string;
+    error?: string;
+  }>;
+};
+
+export default async function LogsPage({ searchParams }: Props) {
   async function rerunAction(formData: FormData) {
     "use server";
     const postId = String(formData.get("postId") ?? "");
     if (!postId) {
-      return;
+      redirect("/logs?error=missing_post_id");
     }
-    await rerunFailedPost(postId);
+
+    const result = await rerunFailedPost(postId);
     revalidatePath("/logs");
+    if (!result.ok) {
+      redirect(`/logs?error=${encodeURIComponent(result.reason ?? "rerun_failed")}`);
+    }
+
+    redirect(`/logs?rerun=${result.newStatus}&postId=${encodeURIComponent(postId)}`);
   }
+
+  const resolvedSearchParams = (await searchParams) ?? {};
 
   const posts = await prisma.post.findMany({
     include: {
@@ -32,6 +49,21 @@ export default async function LogsPage() {
   return (
     <section>
       <h1>Logs / History</h1>
+      {resolvedSearchParams.rerun ? (
+        <div className="card">
+          <p>
+            Rerun result for <code>{resolvedSearchParams.postId ?? "unknown_post"}</code>:{" "}
+            <strong>{resolvedSearchParams.rerun}</strong>
+          </p>
+        </div>
+      ) : null}
+      {resolvedSearchParams.error ? (
+        <div className="card">
+          <p>
+            Rerun error: <strong>{resolvedSearchParams.error}</strong>
+          </p>
+        </div>
+      ) : null}
       {posts.length === 0 ? (
         <div className="card">
           <p>No deliveries yet.</p>

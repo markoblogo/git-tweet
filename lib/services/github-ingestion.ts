@@ -2,7 +2,7 @@ import { EventType } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { isMajorVersionTag, parseSemverTag } from "@/lib/events/semver";
 import { evaluateRepositoryActivation, duplicateSkipMessage } from "@/lib/services/ingestion-guardrails";
-import { composeTweet } from "@/lib/services/tweet-composer";
+import { composeTweet, resolveProjectBlurb } from "@/lib/services/tweet-composer";
 import { postToXOrFail, saveSkippedDuplicate, saveSkippedPolicy, toPrismaJson } from "@/lib/services/posting";
 import { getShareableRepoUrl } from "@/lib/services/link-shortener";
 import type { GitHubCreateTagPayload, GitHubReleasePayload } from "@/types/events";
@@ -95,12 +95,14 @@ async function composeAndPost(params: {
   eventId: string;
   eventType: EventType;
   projectName: string;
-  repoUrl: string;
+  projectKey?: string;
+  projectDescription?: string | null;
+  targetUrl: string;
   topics: string[];
   releaseTag?: string;
   xAccessToken?: string | null;
 }) {
-  const shareable = await getShareableRepoUrl(params.repoUrl);
+  const shareable = await getShareableRepoUrl(params.targetUrl);
   const targetUrl = shareable.url;
   const warning =
     shareable.error && shareable.provider === "abvx-shortener"
@@ -110,7 +112,11 @@ async function composeAndPost(params: {
   const tweet = composeTweet({
     eventType: params.eventType,
     projectName: params.projectName,
-    repoUrl: targetUrl,
+    projectBlurb: resolveProjectBlurb({
+      projectKey: params.projectKey,
+      description: params.projectDescription ?? undefined
+    }),
+    targetUrl,
     topics: params.topics,
     releaseTag: params.releaseTag
   });
@@ -132,6 +138,18 @@ function latestXAccessToken(
     .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 
   return xAccounts[0]?.accessToken;
+}
+
+function releaseEventType(params: { releaseTag: string; existingPublishedReleaseCount: number }): EventType {
+  if (params.existingPublishedReleaseCount === 0) {
+    return EventType.FIRST_PUBLIC_RELEASE;
+  }
+
+  if (isMajorVersionTag(params.releaseTag)) {
+    return EventType.MAJOR_VERSION;
+  }
+
+  return EventType.RELEASE_PUBLISHED;
 }
 
 export async function handleReleasePublished(payload: GitHubReleasePayload): Promise<void> {
@@ -156,10 +174,22 @@ export async function handleReleasePublished(payload: GitHubReleasePayload): Pro
   const releaseTag = payload.release.tag_name;
   const occurredAt = new Date(payload.release.published_at);
   const sourceKey = `gh:release:${payload.release.id}:published`;
+  const existingPublishedReleaseCount = await prisma.event.count({
+    where: {
+      repositoryId: repo.id,
+      type: {
+        in: [EventType.RELEASE_PUBLISHED, EventType.FIRST_PUBLIC_RELEASE, EventType.MAJOR_VERSION]
+      }
+    }
+  });
+  const eventType = releaseEventType({
+    releaseTag,
+    existingPublishedReleaseCount
+  });
 
   const base = await emitEvent({
     repositoryId: repo.id,
-    type: EventType.RELEASE_PUBLISHED,
+    type: eventType,
     sourceKey,
     occurredAt,
     payload,
@@ -192,74 +222,15 @@ export async function handleReleasePublished(payload: GitHubReleasePayload): Pro
   const xAccessToken = latestXAccessToken(repo.user.connectedAccounts);
   await composeAndPost({
     eventId: base.eventId,
-    eventType: EventType.RELEASE_PUBLISHED,
+    eventType,
     projectName: repo.name,
-    repoUrl: repo.htmlUrl,
+    projectKey: repo.fullName,
+    projectDescription: payload.repository.description,
+    targetUrl: payload.release.html_url || repo.htmlUrl,
     topics: repo.topics,
     releaseTag,
     xAccessToken
   });
-
-  const releaseCount = await prisma.event.count({
-    where: {
-      repositoryId: repo.id,
-      type: EventType.RELEASE_PUBLISHED
-    }
-  });
-
-  if (releaseCount === 1) {
-    const firstSourceKey = `gh:repo:${payload.repository.id}:first_public_release`;
-    const first = await emitEvent({
-      repositoryId: repo.id,
-      type: EventType.FIRST_PUBLIC_RELEASE,
-      sourceKey: firstSourceKey,
-      occurredAt,
-      payload,
-      releaseTag
-    });
-
-    if (first.skipped) {
-      await saveSkippedDuplicate(first.eventId, duplicateSkipMessage(firstSourceKey), repo.htmlUrl);
-    } else {
-      const xAccessToken = latestXAccessToken(repo.user.connectedAccounts);
-      await composeAndPost({
-        eventId: first.eventId,
-        eventType: EventType.FIRST_PUBLIC_RELEASE,
-        projectName: repo.name,
-        repoUrl: repo.htmlUrl,
-        topics: repo.topics,
-        releaseTag,
-        xAccessToken
-      });
-    }
-  }
-
-  if (isMajorVersionTag(releaseTag)) {
-    const majorSourceKey = `gh:repo:${payload.repository.id}:major:${releaseTag}`;
-    const major = await emitEvent({
-      repositoryId: repo.id,
-      type: EventType.MAJOR_VERSION,
-      sourceKey: majorSourceKey,
-      occurredAt,
-      payload,
-      releaseTag
-    });
-
-    if (major.skipped) {
-      await saveSkippedDuplicate(major.eventId, duplicateSkipMessage(majorSourceKey), repo.htmlUrl);
-    } else {
-      const xAccessToken = latestXAccessToken(repo.user.connectedAccounts);
-      await composeAndPost({
-        eventId: major.eventId,
-        eventType: EventType.MAJOR_VERSION,
-        projectName: repo.name,
-        repoUrl: repo.htmlUrl,
-        topics: repo.topics,
-        releaseTag,
-        xAccessToken
-      });
-    }
-  }
 }
 
 export async function handleTagCreated(payload: GitHubCreateTagPayload): Promise<void> {
@@ -286,7 +257,9 @@ export async function handleTagCreated(payload: GitHubCreateTagPayload): Promise
   const hasReleaseEvent = await prisma.event.findFirst({
     where: {
       repositoryId: repo.id,
-      type: EventType.RELEASE_PUBLISHED,
+      type: {
+        in: [EventType.RELEASE_PUBLISHED, EventType.FIRST_PUBLIC_RELEASE, EventType.MAJOR_VERSION]
+      },
       releaseTag: payload.ref
     },
     select: { id: true }
@@ -336,7 +309,9 @@ export async function handleTagCreated(payload: GitHubCreateTagPayload): Promise
     eventId: created.eventId,
     eventType: EventType.VERSION_TAG,
     projectName: repo.name,
-    repoUrl: repo.htmlUrl,
+    projectKey: repo.fullName,
+    projectDescription: payload.repository.description,
+    targetUrl: repo.htmlUrl,
     topics: repo.topics,
     releaseTag: payload.ref,
     xAccessToken

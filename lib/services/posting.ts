@@ -20,6 +20,23 @@ export function mapXResultToPostRecord(params: {
   };
 }
 
+export async function publishToX(params: {
+  text: string;
+  warning?: string;
+  xAccessToken?: string | null;
+}): Promise<{ status: PostStatus; externalId?: string; error?: string }> {
+  const client = buildXClient();
+  const result = await client.publishPost({
+    text: params.text,
+    accessToken: params.xAccessToken
+  });
+
+  return mapXResultToPostRecord({
+    result,
+    warning: params.warning
+  });
+}
+
 export async function postToXOrFail(params: {
   eventId: string;
   text: string;
@@ -27,14 +44,10 @@ export async function postToXOrFail(params: {
   warning?: string;
   xAccessToken?: string | null;
 }): Promise<void> {
-  const client = buildXClient();
-  const result = await client.publishPost({
+  const mapped = await publishToX({
     text: params.text,
-    accessToken: params.xAccessToken
-  });
-  const mapped = mapXResultToPostRecord({
-    result,
-    warning: params.warning
+    warning: params.warning,
+    xAccessToken: params.xAccessToken
   });
 
   if (mapped.status === PostStatus.FAILED) {

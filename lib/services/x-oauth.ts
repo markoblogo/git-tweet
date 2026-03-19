@@ -50,21 +50,27 @@ export async function exchangeXOAuthCode(params: {
   codeVerifier: string;
   redirectUri: string;
 }): Promise<{ accessToken: string; refreshToken?: string; expiresIn?: number }> {
+  const secret = xClientSecret();
+  const redirectUri = params.redirectUri || xRedirectUri(params.appUrl);
+
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     code: params.code,
-    client_id: xClientId(),
-    redirect_uri: params.redirectUri || xRedirectUri(params.appUrl),
+    redirect_uri: redirectUri,
     code_verifier: params.codeVerifier
   });
 
   const headers: Record<string, string> = {
-    "content-type": "application/x-www-form-urlencoded"
+    "Content-Type": "application/x-www-form-urlencoded"
   };
 
-  const secret = xClientSecret();
   if (secret) {
-    headers.authorization = `Basic ${Buffer.from(`${xClientId()}:${secret}`).toString("base64")}`;
+    const encodedClientId = encodeURIComponent(xClientId().trim());
+    const encodedSecret = encodeURIComponent(secret.trim());
+    const basic = Buffer.from(`${encodedClientId}:${encodedSecret}`).toString("base64");
+    headers["Authorization"] = `Basic ${basic}`;
+  } else {
+    body.set("client_id", xClientId().trim());
   }
 
   const response = await fetch(`${xApiBase()}/oauth2/token`, {
@@ -84,11 +90,11 @@ export async function exchangeXOAuthCode(params: {
   }
 
   if (!response.ok) {
-    const msg =
+    const details =
       typeof (json as { error_description?: string } | null)?.error_description === "string"
         ? (json as { error_description: string }).error_description
-        : `X OAuth token exchange failed (${response.status})`;
-    throw new Error(msg);
+        : raw || `X OAuth token exchange failed (${response.status})`;
+    throw new Error(details);
   }
 
   const payload = json as { access_token?: string; refresh_token?: string; expires_in?: number };

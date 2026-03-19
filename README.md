@@ -61,7 +61,7 @@ GitHub OAuth:
 - `GITHUB_CLIENT_ID`
 - `GITHUB_CLIENT_SECRET`
 - `GITHUB_REDIRECT_URI` (default: `http://localhost:3000/api/connect/github/callback`)
-- `GITHUB_OAUTH_SCOPE` (default: `read:user`)
+- `GITHUB_OAUTH_SCOPE` (default behavior ensures `read:user public_repo`)
 
 X OAuth:
 - `X_CONNECTION_MODE` (`oauth` default)
@@ -134,12 +134,75 @@ npm run dev
 - Click `Connect GitHub`
 - Complete OAuth
 - Click `Sync repositories from GitHub`
+- If you connected before adding repository scope, reconnect GitHub once so the app receives a token that can sync repositories
 
 ### Connect X
 - Open `/connect/x`
 - Ensure `X_CONNECTION_MODE=oauth`
 - Click `Connect X`
 - Complete OAuth
+
+## Tweet policy
+
+git-tweet stays deterministic and low-noise. No AI copy generation is used.
+
+### Supported post kinds
+
+- `FIRST_PUBLIC_RELEASE`
+- `MAJOR_VERSION`
+- `RELEASE_PUBLISHED`
+- `VERSION_TAG`
+
+### Priority rules
+
+- A published release wins over a semver tag for the same version
+- Release posts use the release URL
+- Tag-only posts use the repository URL
+- One published release produces one post kind:
+  - first release -> `FIRST_PUBLIC_RELEASE`
+  - later `X.0.0` release -> `MAJOR_VERSION`
+  - all other releases -> `RELEASE_PUBLISHED`
+
+### Tweet structure
+
+Each tweet uses 3-4 lines:
+
+1. What happened
+2. What the project is
+3. Target URL
+4. Up to 2 hashtags
+
+Examples:
+
+```text
+First public release v0.1.0: git-tweet
+Auto-post meaningful GitHub releases to X (low-noise).
+https://github.com/markoblogo/git-tweet/releases/tag/v0.1.0
+#typescript #devtools
+```
+
+```text
+Tagged v1.2.3: AGENTS.md_generator
+Keeps AGENTS.md accurate with safe, diff-first updates.
+https://github.com/markoblogo/AGENTS.md_generator
+```
+
+### Project description source
+
+The second line (`what it is`) is resolved in this order:
+
+1. Repo-specific override for key repositories
+2. GitHub repository description from webhook/sync payload
+3. Fallback: `Project update.`
+
+### Hashtag rules
+
+- Maximum 2 hashtags
+- Derived from GitHub topics only
+- Long, internal, or malformed topics are dropped
+- Some topics are normalized, for example:
+  - `developer-tools` -> `#devtools`
+  - `dev-tools` -> `#devtools`
 
 ## Repository selection flow
 
@@ -171,6 +234,11 @@ npm run dev
 - supported
 - active
 5. Create/publish release (or semver tag + release event) in those repos.
+   For real GitHub delivery to local dev, expose the app with a public tunnel such as `ngrok http 3000` and use:
+   - `https://<your-public-url>/api/webhooks/github`
+   - content type: `application/json`
+   - secret: `GITHUB_WEBHOOK_SECRET`
+   - events: `Releases` and optionally `Branch or tag creation`
 6. Verify in `/logs`:
 - event accepted
 - post status `POSTED`
@@ -199,6 +267,7 @@ These scripts sign payloads using `GITHUB_WEBHOOK_SECRET`.
 - Duplicate events are explicitly logged as `SKIPPED_DUPLICATE`.
 - Policy/guardrail skips are logged as `SKIPPED_POLICY` with reason.
 - Shortener failures never block post creation.
+- Manual rerun updates the existing failed log entry in place so a successful rerun removes the rerun button and records the new X `externalId`.
 
 ## Remaining TODO (intentionally deferred)
 

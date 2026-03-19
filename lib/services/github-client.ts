@@ -35,6 +35,23 @@ function githubRedirectUri(appUrl: string): string {
   return process.env.GITHUB_REDIRECT_URI || `${appUrl}/api/connect/github/callback`;
 }
 
+function githubOAuthScope(): string {
+  const requested = (process.env.GITHUB_OAUTH_SCOPE || "read:user public_repo")
+    .split(/\s+/)
+    .map((scope) => scope.trim())
+    .filter(Boolean);
+
+  if (!requested.includes("read:user")) {
+    requested.unshift("read:user");
+  }
+
+  if (!requested.includes("public_repo")) {
+    requested.push("public_repo");
+  }
+
+  return requested.join(" ");
+}
+
 async function githubFetch<T>(path: string, accessToken: string): Promise<T> {
   const response = await fetch(`${githubApiBase()}${path}`, {
     headers: {
@@ -70,11 +87,10 @@ export function buildGitHubAuthorizeUrl(params: {
   state: string;
   appUrl: string;
 }): string {
-  const scope = process.env.GITHUB_OAUTH_SCOPE || "read:user";
   const url = new URL("https://github.com/login/oauth/authorize");
   url.searchParams.set("client_id", params.clientId);
   url.searchParams.set("redirect_uri", githubRedirectUri(params.appUrl));
-  url.searchParams.set("scope", scope);
+  url.searchParams.set("scope", githubOAuthScope());
   url.searchParams.set("state", params.state);
   return url.toString();
 }
