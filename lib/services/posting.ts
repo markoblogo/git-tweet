@@ -1,9 +1,14 @@
-import { PostStatus, Prisma } from "@prisma/client";
+import { PostDestination, PostStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { buildBlueskyClient, type BlueskyPostResult } from "@/lib/services/bluesky-client";
 import { buildXClient, type XPostResult } from "@/lib/services/x-client";
 
-export function mapXResultToPostRecord(params: {
-  result: XPostResult;
+type SocialPostResult =
+  | XPostResult
+  | BlueskyPostResult;
+
+export function mapSocialResultToPostRecord(params: {
+  result: SocialPostResult;
   warning?: string;
 }): { status: PostStatus; externalId?: string; error?: string } {
   if (params.result.ok) {
@@ -15,7 +20,7 @@ export function mapXResultToPostRecord(params: {
   }
 
   return {
-    status: PostStatus.FAILED,
+    status: params.result.code === "NOT_CONFIGURED" ? PostStatus.SKIPPED_POLICY : PostStatus.FAILED,
     error: [params.warning, `${params.result.code}: ${params.result.message}`].filter(Boolean).join(" | ")
   };
 }
@@ -31,7 +36,22 @@ export async function publishToX(params: {
     accessToken: params.xAccessToken
   });
 
-  return mapXResultToPostRecord({
+  return mapSocialResultToPostRecord({
+    result,
+    warning: params.warning
+  });
+}
+
+export async function publishToBluesky(params: {
+  text: string;
+  warning?: string;
+}): Promise<{ status: PostStatus; externalId?: string; error?: string }> {
+  const client = buildBlueskyClient();
+  const result = await client.publishPost({
+    text: params.text
+  });
+
+  return mapSocialResultToPostRecord({
     result,
     warning: params.warning
   });
@@ -54,6 +74,7 @@ export async function postToXOrFail(params: {
     await prisma.post.create({
       data: {
         eventId: params.eventId,
+        destination: PostDestination.X,
         status: mapped.status,
         text: params.text,
         targetUrl: params.targetUrl,
@@ -66,6 +87,31 @@ export async function postToXOrFail(params: {
   await prisma.post.create({
     data: {
       eventId: params.eventId,
+      destination: PostDestination.X,
+      status: mapped.status,
+      text: params.text,
+      targetUrl: params.targetUrl,
+      externalId: mapped.externalId,
+      error: mapped.error
+    }
+  });
+}
+
+export async function postToBluesky(params: {
+  eventId: string;
+  text: string;
+  targetUrl: string;
+  warning?: string;
+}): Promise<void> {
+  const mapped = await publishToBluesky({
+    text: params.text,
+    warning: params.warning
+  });
+
+  await prisma.post.create({
+    data: {
+      eventId: params.eventId,
+      destination: PostDestination.BLUESKY,
       status: mapped.status,
       text: params.text,
       targetUrl: params.targetUrl,
@@ -79,6 +125,7 @@ export async function saveSkippedDuplicate(eventId: string, text: string, target
   await prisma.post.create({
     data: {
       eventId,
+      destination: PostDestination.SYSTEM,
       status: PostStatus.SKIPPED_DUPLICATE,
       text,
       targetUrl
@@ -95,6 +142,7 @@ export async function saveSkippedPolicy(params: {
   await prisma.post.create({
     data: {
       eventId: params.eventId,
+      destination: PostDestination.SYSTEM,
       status: PostStatus.SKIPPED_POLICY,
       text: params.text,
       targetUrl: params.targetUrl,

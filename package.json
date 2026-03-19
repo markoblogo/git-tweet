@@ -18,6 +18,7 @@
     "replay:tag": "node scripts/replay-webhook.mjs --event=create --fixture=fixtures/webhooks/create-tag.json"
   },
   "dependencies": {
+    "@atproto/api": "^0.19.4",
     "@prisma/client": "5.22.0",
     "next": "15.0.4",
     "react": "18.3.1",

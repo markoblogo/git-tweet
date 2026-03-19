@@ -26,6 +26,12 @@ enum PostStatus {
   SKIPPED_POLICY
 }
 
+enum PostDestination {
+  SYSTEM
+  X
+  BLUESKY
+}
+
 model User {
   id                String              @id @default(cuid())
   email             String?             @unique
@@ -113,6 +119,7 @@ model Event {
 model Post {
   id          String     @id @default(cuid())
   eventId      String
+  destination PostDestination @default(SYSTEM)
   status      PostStatus
   text        String
   targetUrl   String

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db/prisma";
 import { isMajorVersionTag, parseSemverTag } from "@/lib/events/semver";
 import { evaluateRepositoryActivation, duplicateSkipMessage } from "@/lib/services/ingestion-guardrails";
 import { composeTweet, resolveProjectBlurb } from "@/lib/services/tweet-composer";
-import { postToXOrFail, saveSkippedDuplicate, saveSkippedPolicy, toPrismaJson } from "@/lib/services/posting";
+import { postToBluesky, postToXOrFail, saveSkippedDuplicate, saveSkippedPolicy, toPrismaJson } from "@/lib/services/posting";
 import { getShareableRepoUrl } from "@/lib/services/link-shortener";
 import type { GitHubCreateTagPayload, GitHubReleasePayload } from "@/types/events";
 
@@ -127,6 +127,13 @@ async function composeAndPost(params: {
     targetUrl,
     warning,
     xAccessToken: params.xAccessToken
+  });
+
+  await postToBluesky({
+    eventId: params.eventId,
+    text: tweet,
+    targetUrl,
+    warning
   });
 }
 

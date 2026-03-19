@@ -40,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/">Home</Link>
             <Link href="/connect/github">Connect GitHub</Link>
             <Link href="/connect/x">Connect X</Link>
+            <Link href="/connect/bluesky">Connect Bluesky</Link>
             <Link href="/repositories">Repositories</Link>
             <Link href="/logs">Logs</Link>
           </div>

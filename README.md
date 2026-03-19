@@ -24,7 +24,7 @@
 
 ## What it does
 
-`git-tweet` is a small conservative tool that watches **public GitHub repositories you explicitly activate** and auto-posts **meaningful release milestones** to social networks (currently: X).
+`git-tweet` is a small conservative tool that watches **public GitHub repositories you explicitly activate** and auto-posts **meaningful release milestones** to social networks (currently: X and Bluesky).
 
 It’s designed for “I’m shipping, I forget to post” workflows:
 - no AI
@@ -135,6 +135,13 @@ Plus OAuth credentials:
 - X_CLIENT_SECRET (for confidential client apps)
 - X_CONNECTION_MODE=oauth
 
+Plus Bluesky manual mode credentials:
+
+- BLUESKY_ENABLED=true
+- BLUESKY_HANDLE
+- BLUESKY_APP_PASSWORD
+- BLUESKY_SERVICE_URL=https://bsky.social
+
 ### 3) Prisma
 
 ```bash
@@ -152,6 +159,7 @@ Open:
 
 - /connect/github
 - /connect/x
+- /connect/bluesky
 - /repositories
 - /logs
 
@@ -217,6 +225,25 @@ npm run dev:clean
 
 ---
 
+## Manual setup: Bluesky personal mode
+
+Bluesky is currently supported in **manual env mode** only.
+
+Required env vars:
+
+- `BLUESKY_ENABLED=true`
+- `BLUESKY_HANDLE`
+- `BLUESKY_APP_PASSWORD`
+- `BLUESKY_SERVICE_URL=https://bsky.social`
+
+Notes:
+
+- Use an **app password**, not your main Bluesky account password
+- There is **no Bluesky OAuth UI** in this stage
+- If Bluesky is disabled or not configured, X posting still proceeds and Bluesky is logged as skipped
+
+---
+
 ## Connect flows
 
 ### Connect GitHub
@@ -232,6 +259,13 @@ npm run dev:clean
 - Ensure `X_CONNECTION_MODE=oauth`
 - Click **Connect X**
 - Complete OAuth
+
+### Connect Bluesky
+
+- Open /connect/bluesky
+- Set the Bluesky env vars in `.env.local`
+- Restart the app
+- Verify the status page shows Bluesky as configured
 
 ---
 
@@ -275,7 +309,7 @@ For the best post quality, make releases meaningful:
 - Use semver tags (`v0.1.0`, `v1.0.0`, ...)
 - Add a short release title and a few bullet points in release notes
 
-`git-tweet` links to the release page, so readers land on the right context.
+`git-tweet` links to the repository URL for a more stable social preview card.
 
 ### 4) Sync repositories after changes
 
@@ -340,8 +374,9 @@ ngrok http 3000
 
 - Open /logs
 - You should see a new event + post record
+- You should see separate destination rows for `X` and `BLUESKY`
 - Status should be POSTED (or FAILED with a clear error)
-- If POSTED, check your X timeline
+- If POSTED, check your X timeline and Bluesky profile
 
 ### Option B: cloudflared
 
@@ -375,7 +410,7 @@ This validates:
 - ingestion
 - dedup
 - tweet composition
-- posting
+- posting to X and Bluesky
 - logs/history
 
 But it does not validate real GitHub delivery (use a tunnel for that).
@@ -390,6 +425,7 @@ But it does not validate real GitHub delivery (use a tunnel for that).
 - Policy/guardrail skips are logged as SKIPPED_POLICY with a reason
 - Shortener failures never block post creation
 - Manual rerun exists for failed posts (/logs)
+- Each destination is logged independently (`SYSTEM`, `X`, `BLUESKY`)
 
 ---
 
@@ -409,6 +445,7 @@ But it does not validate real GitHub delivery (use a tunnel for that).
 ## Roadmap (intentionally small)
 
 - Refresh-token renewal flow for X
+- Bluesky OAuth UI (manual env mode is sufficient for now)
 - Better error surfacing for sync/connect in UI
 - Optional: editable per-repo blurb (instead of code overrides)
 - Optional: additional social connectors (kept modular)

@@ -71,7 +71,7 @@ export default async function LogsPage({ searchParams }: Props) {
       ) : (
         posts.map((post) => (
           <article className="card" key={post.id}>
-            <strong>{post.status}</strong>
+            <strong>{post.destination}: {post.status}</strong>
             <p>
               <small>
                 Lifecycle:{" "}
@@ -86,6 +86,8 @@ export default async function LogsPage({ searchParams }: Props) {
             </p>
             <p>{post.text}</p>
             <p>
+              <small>Destination: {post.destination.toLowerCase()}</small>
+              <br />
               <small>Event: {post.event.type}</small>
               <br />
               <small>Repository: {post.event.repository.fullName}</small>
@@ -101,7 +103,7 @@ export default async function LogsPage({ searchParams }: Props) {
               <br />
               {post.externalId ? (
                 <>
-                  <small>X external id: {post.externalId}</small>
+                  <small>External id / uri: {post.externalId}</small>
                   <br />
                 </>
               ) : null}
@@ -113,7 +115,7 @@ export default async function LogsPage({ searchParams }: Props) {
               ) : null}
               <small>Created: {new Date(post.createdAt).toISOString()}</small>
             </p>
-            {post.status === "FAILED" ? (
+            {post.status === "FAILED" && post.destination !== "SYSTEM" ? (
               <form action={rerunAction}>
                 <input type="hidden" name="postId" value={post.id} />
                 <button type="submit">Re-run failed post</button>
