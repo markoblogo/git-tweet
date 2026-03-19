@@ -22,17 +22,48 @@ async function ensureRepository(payload: {
     create: { email: "local-owner@example.com" }
   });
 
-  const repo = await prisma.repository.upsert({
-    where: { githubId: payload.githubId },
-    update: {
-      owner: payload.owner,
-      name: payload.name,
-      fullName: payload.fullName,
-      htmlUrl: payload.htmlUrl,
-      topics: payload.topics,
-      isPrivate: payload.isPrivate
+  const existing = await prisma.repository.findFirst({
+    where: {
+      OR: [
+        { githubId: payload.githubId },
+        { fullName: payload.fullName }
+      ]
     },
-    create: {
+    include: {
+      user: {
+        include: {
+          connectedAccounts: true
+        }
+      },
+      settings: true
+    }
+  });
+
+  if (existing) {
+    return prisma.repository.update({
+      where: { id: existing.id },
+      data: {
+        githubId: payload.githubId,
+        owner: payload.owner,
+        name: payload.name,
+        fullName: payload.fullName,
+        htmlUrl: payload.htmlUrl,
+        topics: payload.topics,
+        isPrivate: payload.isPrivate
+      },
+      include: {
+        user: {
+          include: {
+            connectedAccounts: true
+          }
+        },
+        settings: true
+      }
+    });
+  }
+
+  return prisma.repository.create({
+    data: {
       userId: fallbackUser.id,
       githubId: payload.githubId,
       owner: payload.owner,
@@ -57,8 +88,6 @@ async function ensureRepository(payload: {
       settings: true
     }
   });
-
-  return repo;
 }
 
 async function emitEvent(params: {
