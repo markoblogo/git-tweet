@@ -284,6 +284,67 @@ Notes:
 
 ---
 
+## Use git-tweet as a posting hub for another repo
+
+`git-tweet` can be used as a central posting hub for another public repository you own, for example `markoblogo/lab.abvx`.
+
+Minimal flow:
+
+1. Start `git-tweet` locally:
+
+```bash
+npm run serve:e2e
+```
+
+2. Expose it publicly with ngrok:
+
+```bash
+ngrok http 3000
+```
+
+3. In the target repository, add a GitHub webhook:
+
+- Payload URL:
+  - `https://<your-ngrok-url>/api/webhooks/github`
+- Content type:
+  - `application/json`
+- Secret:
+  - same value as `GITHUB_WEBHOOK_SECRET`
+- Events:
+  - `Releases`
+
+4. In `git-tweet`:
+
+- open `/connect/github`
+- sync repositories
+- open `/repositories`
+- activate the target public repo
+
+5. Publish a GitHub Release in that target repository.
+
+Expected result:
+
+- `/logs` shows a new event for that repo
+- separate destination records appear for `X` and `BLUESKY`
+- posts are published without adding any posting logic to the target repository itself
+
+Important:
+
+- GitHub cannot deliver webhooks to `127.0.0.1`, so a tunnel is required for real delivery
+- the webhook URL must include `/api/webhooks/github`
+- the target repo must be explicitly activated inside `git-tweet`
+- draft releases do not post; only published releases do
+
+Optional cleanup after a pure test release:
+
+```bash
+gh release delete <tag> --repo <owner/repo> --yes
+git push origin :refs/tags/<tag>
+git tag -d <tag>
+```
+
+---
+
 ## Preflight checklist (make your posts look good)
 
 Before you publish your first release and let `git-tweet` post it, spend 2 minutes on repo presentation.  
