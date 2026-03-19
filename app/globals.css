@@ -201,6 +201,10 @@ button:hover,
   box-shadow: 0 24px 44px rgba(16, 32, 51, 0.12);
 }
 
+.repo-activation-form {
+  margin-top: 0.9rem;
+}
+
 @media (max-width: 860px) {
   nav {
     align-items: flex-start;

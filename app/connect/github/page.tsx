@@ -22,18 +22,27 @@ export default async function ConnectGitHubPage({ searchParams }: Props) {
 
   async function syncAction() {
     "use server";
+    let result:
+      | {
+          synced: number;
+          publicRepos: number;
+          privateRepos: number;
+        }
+      | undefined;
+
     try {
-      const result = await syncGitHubRepositories();
-      revalidatePath("/connect/github");
-      revalidatePath("/repositories");
-      redirect(
-        `/connect/github?sync=1&synced=${result.synced}&publicRepos=${result.publicRepos}&privateRepos=${result.privateRepos}`
-      );
+      result = await syncGitHubRepositories();
     } catch {
       revalidatePath("/connect/github");
       revalidatePath("/repositories");
       redirect("/connect/github?error=github_sync_failed");
     }
+
+    revalidatePath("/connect/github");
+    revalidatePath("/repositories");
+    redirect(
+      `/connect/github?sync=1&synced=${result.synced}&publicRepos=${result.publicRepos}&privateRepos=${result.privateRepos}`
+    );
   }
 
   return (

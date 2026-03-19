@@ -129,15 +129,13 @@ export default async function RepositoriesPage({ searchParams }: Props) {
                 Visibility: {repo.isPrivate ? "private" : "public"} | Activation: {isActive ? "active" : "inactive"} |{" "}
                 Support: {isSupported ? "supported" : "unsupported"} | Topics: {repo.topics.join(", ") || "-"}
               </small>
-              <p>
-                <form action={toggleRepositoryActivation}>
-                  <input type="hidden" name="repositoryId" value={repo.id} />
-                  <input type="hidden" name="nextState" value={isActive ? "false" : "true"} />
-                  <button type="submit" disabled={!isSupported && !isActive}>
-                    {isActive ? "Deactivate" : "Activate"}
-                  </button>
-                </form>
-              </p>
+              <form action={toggleRepositoryActivation} className="repo-activation-form">
+                <input type="hidden" name="repositoryId" value={repo.id} />
+                <input type="hidden" name="nextState" value={isActive ? "false" : "true"} />
+                <button type="submit" disabled={!isSupported && !isActive}>
+                  {isActive ? "Deactivate" : "Activate"}
+                </button>
+              </form>
             </article>
           );
         })
