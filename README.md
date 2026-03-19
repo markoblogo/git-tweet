@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  Listed on ABVX Lab: <a href="https://lab.abvx.xyz/">https://lab.abvx.xyz/</a>
+</p>
+
+<p align="center">
   <a href="#what-it-does">What it does</a> ·
   <a href="#post-policy">Post policy</a> ·
   <a href="#quickstart">Quickstart</a> ·
