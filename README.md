@@ -57,7 +57,7 @@ Each post is structured for readability:
 
 1) **What happened** (Released / Major release / First public release / Tagged)  
 2) **What it is** (one-line blurb; always present)  
-3) **Link** (release URL preferred; fallback to repo URL)  
+3) **Link** (repository URL; stable social preview is preferred over release-page cards)  
 4) **0–2 hashtags** (from repo Topics; conservative normalization + optional fallback)
 
 Example:
@@ -66,7 +66,7 @@ Released v0.1.2: git-tweet
 
 Auto-post meaningful GitHub releases to social posts (low-noise).
 
-https://github.com/markoblogo/git-tweet/releases/tag/v0.1.2
+https://github.com/markoblogo/git-tweet
 
 #opensource #devtools
 ```
@@ -76,6 +76,15 @@ In this stage:
 - repo-specific overrides for key repos (e.g. `git-tweet`, `AGENTS.md_generator`)
 - fallback to GitHub repository description (if present)
 - final fallback: `Project update.`
+
+### Link target policy
+
+In the current stage, `git-tweet` always uses the **repository URL** as the post link target.
+
+Reason:
+- GitHub repository links produce more stable social preview cards than release pages
+- Branding is more predictable
+- The behavior stays conservative and easy to reason about
 
 ---
 

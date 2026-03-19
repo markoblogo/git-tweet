@@ -226,7 +226,7 @@ export async function handleReleasePublished(payload: GitHubReleasePayload): Pro
     projectName: repo.name,
     projectKey: repo.fullName,
     projectDescription: payload.repository.description,
-    targetUrl: payload.release.html_url || repo.htmlUrl,
+    targetUrl: repo.htmlUrl,
     topics: repo.topics,
     releaseTag,
     xAccessToken
