@@ -5,6 +5,7 @@ import { evaluateRepositoryActivation, duplicateSkipMessage } from "@/lib/servic
 import { composeTweet, resolveProjectBlurb } from "@/lib/services/tweet-composer";
 import { postToBluesky, postToXOrFail, saveSkippedDuplicate, saveSkippedPolicy, toPrismaJson } from "@/lib/services/posting";
 import { getShareableRepoUrl } from "@/lib/services/link-shortener";
+import { buildSocialTargetUrl } from "@/lib/services/social-link";
 import type { GitHubCreateTagPayload, GitHubReleasePayload } from "@/types/events";
 
 async function ensureRepository(payload: {
@@ -131,7 +132,8 @@ async function composeAndPost(params: {
   releaseTag?: string;
   xAccessToken?: string | null;
 }) {
-  const shareable = await getShareableRepoUrl(params.targetUrl);
+  const previewReadyTargetUrl = buildSocialTargetUrl(params.targetUrl);
+  const shareable = await getShareableRepoUrl(previewReadyTargetUrl);
   const targetUrl = shareable.url;
   const warning =
     shareable.error && shareable.provider === "abvx-shortener"

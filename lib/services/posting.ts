@@ -44,11 +44,13 @@ export async function publishToX(params: {
 
 export async function publishToBluesky(params: {
   text: string;
+  targetUrl: string;
   warning?: string;
 }): Promise<{ status: PostStatus; externalId?: string; error?: string }> {
   const client = buildBlueskyClient();
   const result = await client.publishPost({
-    text: params.text
+    text: params.text,
+    targetUrl: params.targetUrl
   });
 
   return mapSocialResultToPostRecord({
@@ -105,6 +107,7 @@ export async function postToBluesky(params: {
 }): Promise<void> {
   const mapped = await publishToBluesky({
     text: params.text,
+    targetUrl: params.targetUrl,
     warning: params.warning
   });
 

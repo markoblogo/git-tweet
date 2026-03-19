@@ -1,7 +1,26 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Provider } from "@prisma/client";
+import { prisma } from "@/lib/db/prisma";
+import { getBlueskyConnectionState } from "@/lib/services/bluesky-connection";
+import { getXConnectionState } from "@/lib/services/x-connection";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [githubAccount, xState, blueskyState, activeRepos] = await Promise.all([
+    prisma.connectedAccount.findFirst({
+      where: {
+        provider: Provider.GITHUB,
+        accessToken: { not: null }
+      },
+      orderBy: { updatedAt: "desc" }
+    }),
+    getXConnectionState(),
+    getBlueskyConnectionState(),
+    prisma.repositorySettings.count({
+      where: { isActive: true }
+    })
+  ]);
+
   return (
     <section className="hero-shell">
       <article className="hero-card">
@@ -28,6 +47,29 @@ export default function HomePage() {
             <li>Inactive by default after sync</li>
             <li>Release wins over tag for the same version</li>
           </ul>
+
+          <section className="status-strip" aria-label="Connection status">
+            <article className="status-tile">
+              <span className="status-label">GitHub</span>
+              <strong>{githubAccount ? "Connected" : "Not connected"}</strong>
+              <small>{githubAccount ? githubAccount.providerUser : "Use Connect GitHub"}</small>
+            </article>
+            <article className="status-tile">
+              <span className="status-label">X</span>
+              <strong>{xState.canPost ? "Ready" : "Needs attention"}</strong>
+              <small>{xState.account?.providerUser ?? xState.reason ?? "Use Connect X"}</small>
+            </article>
+            <article className="status-tile">
+              <span className="status-label">Bluesky</span>
+              <strong>{blueskyState.canPost ? "Ready" : "Needs attention"}</strong>
+              <small>{blueskyState.handle ?? blueskyState.reason ?? "Use Connect Bluesky"}</small>
+            </article>
+            <article className="status-tile">
+              <span className="status-label">Active repos</span>
+              <strong>{activeRepos}</strong>
+              <small>Ready for release posts</small>
+            </article>
+          </section>
         </div>
 
         <div className="hero-media">

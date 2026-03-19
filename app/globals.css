@@ -183,6 +183,33 @@ button:hover,
   color: var(--muted);
 }
 
+.status-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 1.75rem;
+}
+
+.status-tile {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 0.9rem 1rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.status-tile strong {
+  display: block;
+  margin-top: 0.15rem;
+}
+
+.status-label {
+  display: block;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .hero-media {
   display: grid;
   gap: 1rem;
@@ -205,6 +232,39 @@ button:hover,
   margin-top: 0.9rem;
 }
 
+.event-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.event-group-count {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 0.35rem 0.7rem;
+  white-space: nowrap;
+}
+
+.event-destination-list {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.destination-entry {
+  border-top: 1px solid var(--border);
+  padding-top: 0.9rem;
+}
+
+.destination-entry:first-child {
+  padding-top: 0.2rem;
+  border-top: 0;
+}
+
 @media (max-width: 860px) {
   nav {
     align-items: flex-start;
@@ -221,5 +281,19 @@ button:hover,
 
   .hero-logo {
     justify-content: flex-start;
+  }
+
+  .status-strip {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .status-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .event-group-header {
+    flex-direction: column;
   }
 }

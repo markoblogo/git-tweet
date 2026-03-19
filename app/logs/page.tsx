@@ -46,6 +46,32 @@ export default async function LogsPage({ searchParams }: Props) {
     }
   });
 
+  const eventGroups = posts.reduce<Array<{
+    eventId: string;
+    eventType: string;
+    repositoryFullName: string;
+    sourceKey: string;
+    createdAt: string;
+    posts: typeof posts;
+  }>>((groups, post) => {
+    const existing = groups.find((group) => group.eventId === post.eventId);
+    if (existing) {
+      existing.posts.push(post);
+      return groups;
+    }
+
+    groups.push({
+      eventId: post.eventId,
+      eventType: post.event.type,
+      repositoryFullName: post.event.repository.fullName,
+      sourceKey: post.event.sourceKey,
+      createdAt: new Date(post.event.createdAt).toISOString(),
+      posts: [post]
+    });
+
+    return groups;
+  }, []);
+
   return (
     <section>
       <h1>Logs / History</h1>
@@ -69,58 +95,72 @@ export default async function LogsPage({ searchParams }: Props) {
           <p>No deliveries yet.</p>
         </div>
       ) : (
-        posts.map((post) => (
-          <article className="card" key={post.id}>
-            <strong>{post.destination}: {post.status}</strong>
-            <p>
-              <small>
-                Lifecycle:{" "}
-                {post.status === "POSTED"
-                  ? "event accepted -> post attempted -> succeeded"
-                  : post.status === "FAILED"
-                    ? "event accepted -> post attempted -> failed"
-                    : post.status === "SKIPPED_DUPLICATE"
-                      ? "duplicate detected -> post skipped"
-                      : "policy guardrail -> post skipped"}
-              </small>
-            </p>
-            <p>{post.text}</p>
-            <p>
-              <small>Destination: {post.destination.toLowerCase()}</small>
-              <br />
-              <small>Event: {post.event.type}</small>
-              <br />
-              <small>Repository: {post.event.repository.fullName}</small>
-              <br />
-              <small>Source key: <code>{post.event.sourceKey}</code></small>
-              <br />
-              <small>
-                URL used:{" "}
-                <a href={post.targetUrl} target="_blank" rel="noreferrer">
-                  {post.targetUrl}
-                </a>
-              </small>
-              <br />
-              {post.externalId ? (
-                <>
-                  <small>External id / uri: {post.externalId}</small>
+        eventGroups.map((group) => (
+          <article className="card" key={group.eventId}>
+            <div className="event-group-header">
+              <div>
+                <strong>{group.eventType}</strong>
+                <p>
+                  <small>Repository: {group.repositoryFullName}</small>
                   <br />
-                </>
-              ) : null}
-              {post.error ? (
-                <>
-                  <small>Error: {post.error}</small>
+                  <small>Source key: <code>{group.sourceKey}</code></small>
                   <br />
-                </>
-              ) : null}
-              <small>Created: {new Date(post.createdAt).toISOString()}</small>
-            </p>
-            {post.status === "FAILED" && post.destination !== "SYSTEM" ? (
-              <form action={rerunAction}>
-                <input type="hidden" name="postId" value={post.id} />
-                <button type="submit">Re-run failed post</button>
-              </form>
-            ) : null}
+                  <small>Event created: {group.createdAt}</small>
+                </p>
+              </div>
+              <span className="event-group-count">{group.posts.length} destinations</span>
+            </div>
+
+            <div className="event-destination-list">
+              {group.posts.map((post) => (
+                <section className="destination-entry" key={post.id}>
+                  <strong>{post.destination}: {post.status}</strong>
+                  <p>
+                    <small>
+                      Lifecycle:{" "}
+                      {post.status === "POSTED"
+                        ? "event accepted -> post attempted -> succeeded"
+                        : post.status === "FAILED"
+                          ? "event accepted -> post attempted -> failed"
+                          : post.status === "SKIPPED_DUPLICATE"
+                            ? "duplicate detected -> post skipped"
+                            : "policy guardrail -> post skipped"}
+                    </small>
+                  </p>
+                  <p>{post.text}</p>
+                  <p>
+                    <small>
+                      URL used:{" "}
+                      <a href={post.targetUrl} target="_blank" rel="noreferrer">
+                        {post.targetUrl}
+                      </a>
+                    </small>
+                    <br />
+                    {post.externalId ? (
+                      <>
+                        <small>External id / uri: {post.externalId}</small>
+                        <br />
+                      </>
+                    ) : null}
+                    {post.error ? (
+                      <>
+                        <small>Error: {post.error}</small>
+                        <br />
+                      </>
+                    ) : null}
+                    <small>Post created: {new Date(post.createdAt).toISOString()}</small>
+                  </p>
+                  {post.destination !== "SYSTEM" && (post.status === "FAILED" || post.status === "POSTED") ? (
+                    <form action={rerunAction}>
+                      <input type="hidden" name="postId" value={post.id} />
+                      <button type="submit">
+                        {post.status === "POSTED" ? "Re-send post" : "Re-run failed post"}
+                      </button>
+                    </form>
+                  ) : null}
+                </section>
+              ))}
+            </div>
           </article>
         ))
       )}

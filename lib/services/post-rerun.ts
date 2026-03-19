@@ -13,7 +13,7 @@ function latestXAccessToken(
 }
 
 export function isRerunnableStatus(status: PostStatus): boolean {
-  return status === PostStatus.FAILED;
+  return status === PostStatus.FAILED || status === PostStatus.POSTED;
 }
 
 export function isRerunnableDestination(destination: PostDestination): boolean {
@@ -50,7 +50,7 @@ export async function rerunFailedPost(postId: string): Promise<{
   }
 
   if (!isRerunnableStatus(post.status)) {
-    return { ok: false, reason: "post_is_not_failed" };
+    return { ok: false, reason: "post_is_not_rerunnable" };
   }
 
   if (!isRerunnableDestination(post.destination)) {
@@ -61,12 +61,13 @@ export async function rerunFailedPost(postId: string): Promise<{
     post.destination === PostDestination.X
       ? await publishToX({
           text: post.text,
-          warning: `manual_rerun_from:${post.id}`,
+          warning: `${post.status === PostStatus.POSTED ? "manual_resend_from" : "manual_rerun_from"}:${post.id}`,
           xAccessToken: latestXAccessToken(post.event.repository.user.connectedAccounts)
         })
       : await publishToBluesky({
           text: post.text,
-          warning: `manual_rerun_from:${post.id}`
+          targetUrl: post.targetUrl,
+          warning: `${post.status === PostStatus.POSTED ? "manual_resend_from" : "manual_rerun_from"}:${post.id}`
         });
 
   await prisma.post.update({
