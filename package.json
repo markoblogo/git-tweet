@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:clean": "rm -rf .next && next dev",
     "build": "next build",
     "start": "next start",
+    "serve:e2e": "next build && next start -H 127.0.0.1 -p 3000",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",

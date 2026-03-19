@@ -155,6 +155,26 @@ Open:
 - /repositories
 - /logs
 
+### Stable local mode for release testing
+
+For day-to-day code changes, `npm run dev` is fine.
+
+For **real webhook/release testing**, prefer production mode:
+
+```bash
+npm run serve:e2e
+```
+
+Why:
+- `next dev` can occasionally produce unstable hot-reload bundles in this repo during long sessions
+- `serve:e2e` uses a clean production build and is more reliable for GitHub webhook tests, reruns, and UI verification
+
+If the dev server ever starts serving broken CSS/chunks, use:
+
+```bash
+npm run dev:clean
+```
+
 ---
 
 ## Manual setup: GitHub OAuth App
@@ -286,7 +306,7 @@ For real GitHub release events you need a **publicly reachable URL** that forwar
 1. Start the app:
 
 ```bash
-npm run dev
+npm run serve:e2e
 ```
 
 2. Start ngrok in another terminal:
