@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ADMIN_COOKIE_NAME, getAdminGatePassword, isValidAdminCookie } from "@/lib/services/admin-gate";
+
+const ADMIN_COOKIE_NAME = "git_tweet_admin";
+const ADMIN_COOKIE_PAYLOAD = "git-tweet-admin";
+const encoder = new TextEncoder();
 
 const PUBLIC_PATH_PREFIXES = ["/_next/", "/assets/"];
 const PUBLIC_PATHS = new Set([
@@ -9,8 +12,29 @@ const PUBLIC_PATHS = new Set([
   "/favicon.ico"
 ]);
 
+async function signValue(secret: string, value: string): Promise<string> {
+  const cryptoKey = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+  const signature = await crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(value));
+  return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function isValidAdminCookie(secret: string, cookieValue: string | undefined): Promise<boolean> {
+  if (!cookieValue) {
+    return false;
+  }
+
+  const expected = `v1.${await signValue(secret, ADMIN_COOKIE_PAYLOAD)}`;
+  return cookieValue === expected;
+}
+
 export async function middleware(request: NextRequest) {
-  const gatePassword = getAdminGatePassword();
+  const gatePassword = process.env.ADMIN_GATE_PASSWORD || null;
   if (!gatePassword) {
     return NextResponse.next();
   }
