@@ -38,8 +38,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </Link>
           <div className="nav-links">
             <Link href="/">Home</Link>
-            <Link href="https://github.com/markoblogo/git-tweet">GitHub</Link>
-            <Link href="https://lab.abvx.xyz/">ABVX Lab</Link>
+            <Link href="/connect/github">Connect GitHub</Link>
+            <Link href="/connect/x">Connect X</Link>
+            <Link href="/connect/bluesky">Connect Bluesky</Link>
+            <Link href="/repositories">Repositories</Link>
+            <Link href="/logs">Logs</Link>
           </div>
         </nav>
         <main>{children}</main>
