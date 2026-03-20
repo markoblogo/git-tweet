@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
+import { requireAdminPageAccess } from "@/lib/services/admin-gate";
 import { getXConnectionState, syncManualXConnection } from "@/lib/services/x-connection";
 
 type Props = {
@@ -14,6 +15,8 @@ type Props = {
 };
 
 export default async function ConnectXPage({ searchParams }: Props) {
+  await requireAdminPageAccess("/connect/x");
+
   const state = await getXConnectionState();
   const resolvedSearchParams = (await searchParams) ?? {};
 

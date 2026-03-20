@@ -1,9 +1,15 @@
 import { Provider } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { requireAdminApiAccess } from "@/lib/services/admin-gate";
 import { buildGitHubAuthorizeUrl } from "@/lib/services/github-client";
 import { createOAuthState, randomStateToken } from "@/lib/services/oauth-state";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const unauthorized = await requireAdminApiAccess(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
+
   const appUrl = process.env.APP_URL || "http://localhost:3000";
   const clientId = process.env.GITHUB_CLIENT_ID;
 

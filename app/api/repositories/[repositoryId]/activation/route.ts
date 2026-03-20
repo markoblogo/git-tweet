@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { requireAdminApiAccess } from "@/lib/services/admin-gate";
 import { prisma } from "@/lib/db/prisma";
 
 const activationSchema = z.object({
@@ -10,6 +11,11 @@ export async function PATCH(
   request: Request,
   context: { params: Promise<{ repositoryId: string }> }
 ) {
+  const unauthorized = await requireAdminApiAccess(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
+
   const { repositoryId } = await context.params;
   if (!repositoryId) {
     return NextResponse.json({ ok: false, error: "repositoryId is required" }, { status: 400 });

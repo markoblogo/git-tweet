@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
+import { requireAdminPageAccess } from "@/lib/services/admin-gate";
 import { revalidatePath } from "next/cache";
 
 type Props = {
@@ -45,6 +46,8 @@ function filterLabel(filter: string): string {
 }
 
 export default async function RepositoriesPage({ searchParams }: Props) {
+  await requireAdminPageAccess("/repositories");
+
   async function toggleRepositoryActivation(formData: FormData) {
     "use server";
     const repositoryId = String(formData.get("repositoryId") ?? "");

@@ -2,10 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { Provider } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { requireAdminPageAccess } from "@/lib/services/admin-gate";
 import { getBlueskyConnectionState } from "@/lib/services/bluesky-connection";
 import { getXConnectionState } from "@/lib/services/x-connection";
 
 export default async function HomePage() {
+  await requireAdminPageAccess("/");
+
   const [githubAccount, xState, blueskyState, activeRepos] = await Promise.all([
     prisma.connectedAccount.findFirst({
       where: {

@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
+import { requireAdminApiAccess } from "@/lib/services/admin-gate";
 import { rerunFailedPost } from "@/lib/services/post-rerun";
 
 export async function POST(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ postId: string }> }
 ) {
+  const unauthorized = await requireAdminApiAccess(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
+
   const { postId } = await context.params;
   if (!postId) {
     return NextResponse.json({ ok: false, error: "postId is required" }, { status: 400 });

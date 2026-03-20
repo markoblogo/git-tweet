@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
+import { requireAdminApiAccess } from "@/lib/services/admin-gate";
 import { syncGitHubRepositories } from "@/lib/services/github-client";
 
-export async function POST() {
+export async function POST(request: Request) {
+  const unauthorized = await requireAdminApiAccess(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
+
   try {
     const result = await syncGitHubRepositories();
     return NextResponse.json(result);

@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { prisma } from "@/lib/db/prisma";
+import { requireAdminPageAccess } from "@/lib/services/admin-gate";
 import { rerunFailedPost } from "@/lib/services/post-rerun";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -14,6 +15,8 @@ type Props = {
 };
 
 export default async function LogsPage({ searchParams }: Props) {
+  await requireAdminPageAccess("/logs");
+
   async function rerunAction(formData: FormData) {
     "use server";
     const postId = String(formData.get("postId") ?? "");

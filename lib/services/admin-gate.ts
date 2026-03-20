@@ -1,3 +1,8 @@
+import { createHash, timingSafeEqual } from "node:crypto";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { NextResponse } from "next/server";
+
 const encoder = new TextEncoder();
 
 export const ADMIN_COOKIE_NAME = "git_tweet_admin";
@@ -23,6 +28,24 @@ export function getAdminGatePassword(): string | null {
   return process.env.ADMIN_GATE_PASSWORD || null;
 }
 
+export function sanitizeNextPath(nextPath: string | null): string {
+  if (!nextPath || !nextPath.startsWith("/") || nextPath.startsWith("//")) {
+    return "/";
+  }
+
+  if (nextPath === "/admin-login") {
+    return "/";
+  }
+
+  return nextPath;
+}
+
+function safeEqual(left: string, right: string): boolean {
+  const leftHash = createHash("sha256").update(left).digest();
+  const rightHash = createHash("sha256").update(right).digest();
+  return timingSafeEqual(leftHash, rightHash);
+}
+
 export async function buildAdminCookieValue(secret: string): Promise<string> {
   const signature = await signValue(secret, ADMIN_COOKIE_PAYLOAD);
   return `v1.${signature}`;
@@ -35,4 +58,53 @@ export async function isValidAdminCookie(secret: string, cookieValue: string | u
 
   const expected = await buildAdminCookieValue(secret);
   return cookieValue === expected;
+}
+
+function readCookieFromHeader(cookieHeader: string | null, cookieName: string): string | undefined {
+  if (!cookieHeader) {
+    return undefined;
+  }
+
+  const prefix = `${cookieName}=`;
+  for (const part of cookieHeader.split(";")) {
+    const trimmed = part.trim();
+    if (trimmed.startsWith(prefix)) {
+      return trimmed.slice(prefix.length);
+    }
+  }
+
+  return undefined;
+}
+
+export function isValidAdminPassword(password: string, gatePassword: string): boolean {
+  return safeEqual(password, gatePassword);
+}
+
+export async function requireAdminPageAccess(nextPath: string): Promise<void> {
+  const gatePassword = getAdminGatePassword();
+  if (!gatePassword) {
+    return;
+  }
+
+  const cookieStore = await cookies();
+  const cookieValue = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
+  if (await isValidAdminCookie(gatePassword, cookieValue)) {
+    return;
+  }
+
+  redirect(`/admin-login?next=${encodeURIComponent(sanitizeNextPath(nextPath))}`);
+}
+
+export async function requireAdminApiAccess(request: Request): Promise<NextResponse | null> {
+  const gatePassword = getAdminGatePassword();
+  if (!gatePassword) {
+    return null;
+  }
+
+  const cookieValue = readCookieFromHeader(request.headers.get("cookie"), ADMIN_COOKIE_NAME);
+  if (await isValidAdminCookie(gatePassword, cookieValue)) {
+    return null;
+  }
+
+  return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
 }

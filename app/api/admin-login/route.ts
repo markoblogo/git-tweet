@@ -1,24 +1,11 @@
-import { createHash, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-import { ADMIN_COOKIE_NAME, buildAdminCookieValue, getAdminGatePassword } from "@/lib/services/admin-gate";
-
-function sanitizeNextPath(nextPath: string | null): string {
-  if (!nextPath || !nextPath.startsWith("/") || nextPath.startsWith("//")) {
-    return "/";
-  }
-
-  if (nextPath === "/admin-login") {
-    return "/";
-  }
-
-  return nextPath;
-}
-
-function safeEqual(left: string, right: string): boolean {
-  const leftHash = createHash("sha256").update(left).digest();
-  const rightHash = createHash("sha256").update(right).digest();
-  return timingSafeEqual(leftHash, rightHash);
-}
+import {
+  ADMIN_COOKIE_NAME,
+  buildAdminCookieValue,
+  getAdminGatePassword,
+  isValidAdminPassword,
+  sanitizeNextPath
+} from "@/lib/services/admin-gate";
 
 export async function POST(request: Request) {
   const gatePassword = getAdminGatePassword();
@@ -31,7 +18,7 @@ export async function POST(request: Request) {
   const nextPath = sanitizeNextPath(formData.get("next")?.toString() ?? null);
   const appUrl = process.env.APP_URL || "http://127.0.0.1:3000";
 
-  if (!safeEqual(password, gatePassword)) {
+  if (!isValidAdminPassword(password, gatePassword)) {
     return NextResponse.redirect(`${appUrl}/admin-login?error=invalid_password&next=${encodeURIComponent(nextPath)}`);
   }
 

@@ -1,8 +1,11 @@
 export const dynamic = "force-dynamic";
 
+import { requireAdminPageAccess } from "@/lib/services/admin-gate";
 import { getBlueskyConnectionState } from "@/lib/services/bluesky-connection";
 
 export default async function ConnectBlueskyPage() {
+  await requireAdminPageAccess("/connect/bluesky");
+
   const state = await getBlueskyConnectionState();
 
   return (

@@ -1,9 +1,15 @@
 import { Provider } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { requireAdminApiAccess } from "@/lib/services/admin-gate";
 import { consumeOAuthState } from "@/lib/services/oauth-state";
 import { exchangeXOAuthCode, fetchXMe, saveXConnection } from "@/lib/services/x-oauth";
 
 export async function GET(request: Request) {
+  const unauthorized = await requireAdminApiAccess(request);
+  if (unauthorized) {
+    return unauthorized;
+  }
+
   const appUrl = process.env.APP_URL || "http://localhost:3000";
   const url = new URL(request.url);
   const code = url.searchParams.get("code");

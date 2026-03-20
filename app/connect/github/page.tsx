@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { requireAdminPageAccess } from "@/lib/services/admin-gate";
 import { getGitHubConnectionState, syncGitHubRepositories } from "@/lib/services/github-client";
 
 type Props = {
@@ -17,6 +18,8 @@ type Props = {
 };
 
 export default async function ConnectGitHubPage({ searchParams }: Props) {
+  await requireAdminPageAccess("/connect/github");
+
   const state = await getGitHubConnectionState();
   const resolvedSearchParams = (await searchParams) ?? {};
 

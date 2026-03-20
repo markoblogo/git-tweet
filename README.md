@@ -36,6 +36,11 @@
 
 The public landing page lives at [git-tweet.abvx.xyz](https://git-tweet.abvx.xyz/). The repo stays the source of truth for setup, policy, and release workflow details.
 
+Operational note:
+- keep the public landing and the operator deployment separate
+- set `APP_URL` to the operator deployment URL, not the public landing URL
+- point GitHub webhooks to the operator deployment `/api/webhooks/github`
+
 It’s designed for “I’m shipping, I forget to post” workflows:
 - no AI
 - no commit spam
@@ -135,7 +140,7 @@ cp .env.example .env.local
 Minimal required:
 
 - DATABASE_URL
-- APP_URL
+- APP_URL (operator deployment base URL)
 - GITHUB_WEBHOOK_SECRET
 
 Plus OAuth credentials:
@@ -337,7 +342,7 @@ Expected result:
 Important:
 
 - GitHub cannot deliver webhooks to `127.0.0.1`, so a tunnel is required for local testing
-- for reliable automatic posting, move the webhook to a stable public `APP_URL` instead of a temporary tunnel
+- for reliable automatic posting, move the webhook to a stable operator `APP_URL` instead of a temporary tunnel
 - the webhook URL must include `/api/webhooks/github`
 - the target repo must be explicitly activated inside `git-tweet`
 - draft releases do not post; only published releases do
