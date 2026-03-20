@@ -9,6 +9,10 @@
 </p>
 
 <p align="center">
+  Live: <a href="https://git-tweet.abvx.xyz/">https://git-tweet.abvx.xyz/</a>
+</p>
+
+<p align="center">
   Listed on ABVX Lab: <a href="https://lab.abvx.xyz/">https://lab.abvx.xyz/</a>
 </p>
 
@@ -29,6 +33,8 @@
 ## What it does
 
 `git-tweet` is a small conservative tool that watches **public GitHub repositories you explicitly activate** and auto-posts **meaningful release milestones** to social networks (currently: X and Bluesky).
+
+The public landing page lives at [git-tweet.abvx.xyz](https://git-tweet.abvx.xyz/). The repo stays the source of truth for setup, policy, and release workflow details.
 
 It’s designed for “I’m shipping, I forget to post” workflows:
 - no AI
