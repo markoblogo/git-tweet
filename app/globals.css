@@ -228,6 +228,32 @@ button:hover,
   box-shadow: 0 24px 44px rgba(16, 32, 51, 0.12);
 }
 
+.auth-card {
+  max-width: 560px;
+  margin: 2rem auto 0;
+}
+
+.auth-form {
+  display: grid;
+  gap: 0.9rem;
+  margin: 1.2rem 0;
+}
+
+.auth-field {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--muted);
+}
+
+.auth-field input {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0.85rem 0.95rem;
+  font: inherit;
+  color: var(--text);
+  background: #fff;
+}
+
 .repo-activation-form {
   margin-top: 0.9rem;
 }
