@@ -330,7 +330,8 @@ Expected result:
 
 Important:
 
-- GitHub cannot deliver webhooks to `127.0.0.1`, so a tunnel is required for real delivery
+- GitHub cannot deliver webhooks to `127.0.0.1`, so a tunnel is required for local testing
+- for reliable automatic posting, move the webhook to a stable public `APP_URL` instead of a temporary tunnel
 - the webhook URL must include `/api/webhooks/github`
 - the target repo must be explicitly activated inside `git-tweet`
 - draft releases do not post; only published releases do
@@ -482,6 +483,16 @@ This validates:
 But it does not validate real GitHub delivery (use a tunnel for that).
 
 ---
+
+## Recovery for failed posts
+
+If a release reaches `git-tweet` but one destination fails, use the built-in recovery path:
+
+1. Fix the underlying connection issue (`/connect/x` for expired X OAuth, `/connect/bluesky` or env for Bluesky).
+2. Open `/logs` and rerun the failed destination.
+3. Confirm the destination row changes from `FAILED` to `POSTED`.
+
+This is useful when webhook delivery worked, but a provider token expired after the event was ingested.
 
 ## Observability & reliability
 
