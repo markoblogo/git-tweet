@@ -19,7 +19,6 @@ services:
       - .env.local
     environment:
       DATABASE_URL: postgresql://git_tweet:local-only-password@db:5432/git_tweet?schema=public
-      APP_URL: http://127.0.0.1:3000
     ports:
       - "3000:3000"
     depends_on:

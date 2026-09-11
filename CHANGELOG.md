@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+### Changed
+
+- Reworked the README around a copyable preview, self-hosting path, and clear product boundaries.
+- Added architecture, configuration, and operations references.
+- Refreshed GitHub About metadata, discovery topics, and the current measured demo.
+
+### Fixed
+
+- Docker Compose now respects `APP_URL` from `.env.local` for externally hosted OAuth callbacks.
+
 ## [0.3.1] - 2026-09-11
 
 ### Fixed

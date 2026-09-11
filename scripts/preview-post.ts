@@ -20,7 +20,7 @@ if (!eventType) {
 }
 
 const projectName = argument("project", "git-tweet");
-const releaseTag = argument("tag", "v0.3.0");
+const releaseTag = argument("tag", "v0.3.1");
 const targetUrl = argument("url", "https://github.com/markoblogo/git-tweet");
 const topics = argument("topics", "opensource,devtools").split(",").filter(Boolean);
 const projectBlurb = argument(

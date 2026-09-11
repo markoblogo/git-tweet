@@ -15,9 +15,7 @@ Use GitHub’s private reporting flow instead:
 - Go to the repository’s **Security** tab
 - Click **Report a vulnerability** (GitHub Security Advisories)
 
-If that option is not available, you can contact the maintainer privately:
-- Email: **abv-creative@proton.me**  
-  (Replace with your preferred address.)
+If that option is unavailable, contact **abv-creative@proton.me**.
 
 ### What to include
 

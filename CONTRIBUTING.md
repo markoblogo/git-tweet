@@ -30,7 +30,7 @@ This project started as a personal workflow tool and is intentionally kept **sma
 
 1. Install dependencies:
    ```bash
-   npm install
+   npm ci
    ```
 2. Configure env:
    ```bash
@@ -38,8 +38,7 @@ This project started as a personal workflow tool and is intentionally kept **sma
    ```
 3. Run database migrations:
    ```bash
-   npm run db:generate
-   npm run db:migrate -- --name init
+   npm run db:deploy
    ```
 4. Start the dev server:
    ```bash
@@ -48,21 +47,26 @@ This project started as a personal workflow tool and is intentionally kept **sma
 
 ## Tests and quality checks
 
-Please ensure these pass before submitting:
+Run the same application gate used by CI:
 
 ```bash
-npm run lint
-npm run typecheck
-npm test
-npm run db:validate
-npm run build
+npm run ci
+npm audit --omit=dev --audit-level=high
+```
+
+Changes to Docker, migrations, startup, or health checks must also pass:
+
+```bash
+docker compose up --build --detach --wait
+curl --fail 'http://127.0.0.1:3000/api/health?ready=1'
+docker compose down --volumes
 ```
 
 ## Security notes
 
 - Never commit secrets (tokens, OAuth client secrets, webhook secrets).
 - For local end-to-end testing with real GitHub events, use a tunnel (ngrok/cloudflared).
-- If you find a security issue, please report it privately (open a minimal issue without sensitive details).
+- If you find a security issue, use GitHub's private vulnerability reporting flow described in [SECURITY.md](SECURITY.md).
 
 ## License
 

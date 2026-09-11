@@ -1,4 +1,4 @@
-Released v0.3.0: git-tweet
+Released v0.3.1: git-tweet
 Self-hosted release announcements with deterministic rules, logs, and retries.
 https://github.com/markoblogo/git-tweet
 #opensource #devtools
