@@ -60,5 +60,8 @@ stored repositories, events, logs, and connected-account records.
 - **Console returns 503:** set `ADMIN_GATE_PASSWORD` in `.env.local` and restart.
 - **Webhook produces no post:** confirm the repository is public and active,
   inspect `/logs`, and verify the webhook secret and subscribed event.
+- **Scheduled poll fails:** verify the connected GitHub account,
+  `GITHUB_AUTO_ACTIVATE_OWNERS`, `CRON_SECRET`, and the Actions secret
+  `GIT_TWEET_CRON_SECRET`.
 - **Duplicate or tag event is skipped:** inspect the recorded policy reason in
   `/logs`; release events intentionally take precedence over matching tags.

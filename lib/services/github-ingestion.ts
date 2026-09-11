@@ -8,6 +8,7 @@ import { getShareableRepoUrl } from "@/lib/services/link-shortener";
 import { buildSocialTargetUrl } from "@/lib/services/social-link";
 import type { GitHubCreateTagPayload, GitHubReleasePayload } from "@/types/events";
 import { decryptToken } from "@/lib/services/token-vault";
+import { shouldAutoActivateRepository } from "@/lib/services/repository-policy";
 
 async function ensureRepository(payload: {
   githubId: string;
@@ -18,6 +19,7 @@ async function ensureRepository(payload: {
   topics: string[];
   isPrivate: boolean;
 }) {
+  const autoActivate = shouldAutoActivateRepository(payload);
   const fallbackUser = await prisma.user.upsert({
     where: { email: "local-owner@example.com" },
     update: {},
@@ -51,7 +53,13 @@ async function ensureRepository(payload: {
         fullName: payload.fullName,
         htmlUrl: payload.htmlUrl,
         topics: payload.topics,
-        isPrivate: payload.isPrivate
+        isPrivate: payload.isPrivate,
+        settings: {
+          upsert: {
+            create: { isActive: autoActivate },
+            update: autoActivate ? { isActive: true } : {}
+          }
+        }
       },
       include: {
         user: {
@@ -77,7 +85,7 @@ async function ensureRepository(payload: {
       defaultBranch: "main",
       settings: {
         create: {
-          isActive: false
+          isActive: autoActivate
         }
       }
     },

@@ -18,15 +18,15 @@
 
 Per-repository posting Actions work well for one repository and one network.
 `git-tweet` is a small, single-operator hub for people who ship across several
-public repositories and want one place to control announcements, inspect
+public repositories and want one place to automate announcements, inspect
 policy decisions, and retry failed deliveries.
 
 ```text
-GitHub Release → signed webhook → policy + dedup → X / Bluesky → delivery log
+GitHub Release → signed webhook or scheduled poll → policy + dedup → X / Bluesky → delivery log
 ```
 
 - public repositories only;
-- newly discovered repositories stay inactive;
+- public repositories from allowlisted owners can activate automatically;
 - release-first rules prevent release/tag duplicates;
 - each destination succeeds or fails independently;
 - no AI, scheduling, commit spam, billing, or multi-user roles.
@@ -118,7 +118,19 @@ Add its client ID and secret to `.env.local`, open `/connect/github`, complete
 OAuth, and sync repositories. Private repositories are visible as unsupported
 and cannot be activated.
 
-For each repository you activate, add a GitHub webhook:
+To cover every current and future public repository owned by your account, set:
+
+```sh
+GITHUB_AUTO_ACTIVATE_OWNERS="your-github-login"
+CRON_SECRET="a-long-random-value"
+```
+
+The signed webhook remains the immediate path. `GET /api/cron/releases`,
+authenticated with `Authorization: Bearer <CRON_SECRET>`, recovers new
+repositories and missed deliveries. This repository includes an hourly GitHub
+Actions poll and a daily Vercel Cron fallback.
+
+For immediate announcements, add the same webhook to each public repository:
 
 - payload URL: `<APP_URL>/api/webhooks/github`;
 - content type: `application/json`;
@@ -152,7 +164,7 @@ Supported signals:
 3. published release;
 4. semver tag, only when a release does not cover it.
 
-Drafts, prereleases, private repositories, inactive repositories, commits,
+Drafts, prereleases, private repositories, non-allowlisted inactive repositories, commits,
 pull requests, branches, issues, and stars do not publish posts. The generated
 message contains the event, project name, one-line description, stable
 repository URL, and at most two normalized topic hashtags.
@@ -202,7 +214,7 @@ npm run ci
 npm audit --omit=dev --audit-level=high
 ```
 
-CI verifies ESLint, TypeScript, 51 behavior tests, Prisma schema validity, a
+CI verifies ESLint, TypeScript, behavior tests, Prisma schema validity, a
 database-free production build, production dependency advisories, and the full
 Docker Compose migration/readiness path.
 
