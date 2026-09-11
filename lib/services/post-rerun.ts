@@ -76,3 +76,35 @@ export async function rerunFailedPost(postId: string): Promise<{
     externalId: mapped.externalId
   };
 }
+
+export async function retryFailedXRelease(params: {
+  repository: string;
+  releaseTag: string;
+}): Promise<{
+  ok: boolean;
+  reason?: string;
+  postId?: string;
+  newStatus?: PostStatus;
+}> {
+  const post = await prisma.post.findFirst({
+    where: {
+      destination: PostDestination.X,
+      status: PostStatus.FAILED,
+      event: {
+        releaseTag: params.releaseTag,
+        repository: { fullName: params.repository }
+      }
+    },
+    orderBy: { createdAt: "desc" },
+    select: { id: true }
+  });
+  if (!post) return { ok: false, reason: "failed_x_post_not_found" };
+
+  const result = await rerunFailedPost(post.id);
+  return {
+    ok: result.ok,
+    reason: result.reason,
+    postId: post.id,
+    newStatus: result.newStatus
+  };
+}
