@@ -1,4 +1,4 @@
-# Reproducible v0.3.0 demo
+# Reproducible v0.3.1 demo
 
 Run:
 
@@ -6,11 +6,11 @@ Run:
 npm run preview -- \
   --event release \
   --project git-tweet \
-  --tag v0.3.0 \
+  --tag v0.3.1 \
   --description "Self-hosted release announcements with deterministic rules, logs, and retries."
 ```
 
-The committed [output](v0.3.0-preview.txt) is 167 characters, targets X and
+The committed [output](v0.3.1-preview.txt) is 167 characters, targets X and
 Bluesky, and sends nothing. It exercises the same deterministic composer used
 by webhook ingestion.
 

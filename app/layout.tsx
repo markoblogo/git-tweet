@@ -6,16 +6,16 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL || "http://127.0.0.1:3000"),
   title: "git-tweet",
-  description: "Low-noise GitHub milestones to social posts.",
+  description: "Self-hosted GitHub release announcements for X and Bluesky, with deduplication, logs, and retries.",
   openGraph: {
     title: "git-tweet",
-    description: "Low-noise GitHub milestones to social posts.",
+    description: "Self-hosted GitHub release announcements for X and Bluesky, with deduplication, logs, and retries.",
     images: ["/assets/og.png"]
   },
   twitter: {
     card: "summary_large_image",
     title: "git-tweet",
-    description: "Low-noise GitHub milestones to social posts.",
+    description: "Self-hosted GitHub release announcements for X and Bluesky, with deduplication, logs, and retries.",
     images: ["/assets/og.png"]
   },
   icons: {

@@ -4,22 +4,22 @@
 
 # git-tweet
 
-**Publish meaningful GitHub releases to X and Bluesky—with deterministic rules, deduplication, logs, and retries.**
+**Self-hosted GitHub release announcements for X and Bluesky, with deterministic policy, deduplication, logs, and retries.**
 
 [![CI](https://github.com/markoblogo/git-tweet/actions/workflows/ci.yml/badge.svg)](https://github.com/markoblogo/git-tweet/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/markoblogo/git-tweet)](https://github.com/markoblogo/git-tweet/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-[Public overview](https://git-tweet.abvx.xyz/) · [Reproducible demo](demo/README.md) · [Post policy](#post-policy) · [Self-host](#self-host-with-docker)
+[Public overview](https://git-tweet.abvx.xyz/) · [Try the preview](#preview-a-post-in-one-minute) · [Self-host](#self-host-with-docker) · [Operations](docs/operations.md)
 
 ![Release to social-post workflow](assets/og.png)
 
 ## Why it exists
 
-Per-repository posting Actions are useful when one workflow and one network are
-enough. `git-tweet` is a small, single-operator hub for people who ship across
-several repositories and need one place to see policy decisions, duplicates,
-failures, and manual retries.
+Per-repository posting Actions work well for one repository and one network.
+`git-tweet` is a small, single-operator hub for people who ship across several
+public repositories and want one place to control announcements, inspect
+policy decisions, and retry failed deliveries.
 
 ```text
 GitHub Release → signed webhook → policy + dedup → X / Bluesky → delivery log
@@ -36,15 +36,29 @@ GitHub Release → signed webhook → policy + dedup → X / Bluesky → deliver
 Requires Node.js 20.9 or newer.
 
 ```sh
-npm install
+git clone https://github.com/markoblogo/git-tweet.git
+cd git-tweet
+npm ci
 npm run preview -- --project my-project --tag v1.2.0 \
+  --url https://github.com/you/my-project \
   --description "A short, factual description of the release."
 ```
 
-This uses the production composer and sends nothing. The committed
-[v0.3.0 example](demo/v0.3.0-preview.txt) records its measured output.
+This uses the production composer and sends nothing:
+
+```text
+Released v1.2.0: my-project
+A short, factual description of the release.
+https://github.com/you/my-project
+#opensource #devtools
+```
+
+The committed [v0.3.1 demo](demo/v0.3.1-preview.txt) records the exact command,
+167-character output, destinations, and no-send result.
 
 ## Self-host with Docker
+
+Requires Docker Engine or Docker Desktop with Compose.
 
 1. Create the local configuration:
 
@@ -55,25 +69,31 @@ This uses the production composer and sends nothing. The committed
 
 2. Put the generated value in `TOKEN_ENCRYPTION_KEY`, choose a strong
    `ADMIN_GATE_PASSWORD`, and configure the GitHub/X/Bluesky values you use.
+   The [configuration reference](docs/configuration.md) explains every group.
 
 3. Start the application and PostgreSQL:
 
    ```sh
-   docker compose up --build
+   docker compose up --build --detach --wait
    ```
 
 4. Open `http://127.0.0.1:3000`. Readiness is available at
    `GET /api/health?ready=1`.
 
-The container applies committed Prisma migrations before starting. The named
-Docker volume retains the database between restarts.
+The app applies committed Prisma migrations before starting. The named Docker
+volume retains the database between restarts. Follow logs with
+`docker compose logs -f app` and stop the stack with `docker compose down`.
+See the [operations guide](docs/operations.md) for backups, upgrades, health
+checks, and troubleshooting.
 
 ## Local development
 
+Start PostgreSQL separately and point `DATABASE_URL` at it, then run:
+
 ```sh
 cp .env.example .env.local
-npm install
-npm run db:migrate -- --name init
+npm ci
+npm run db:deploy
 npm run dev
 ```
 
@@ -164,11 +184,11 @@ public webhook URL and configured destination credentials.
 - Report vulnerabilities through GitHub private security advisories; see
   [SECURITY.md](SECURITY.md).
 
-From v0.2.0:
+From v0.2.0 or v0.3.0:
 
 ```sh
 git pull
-npm install
+npm ci
 npm run db:deploy
 ```
 
@@ -183,7 +203,18 @@ npm audit --omit=dev --audit-level=high
 ```
 
 CI verifies ESLint, TypeScript, 51 behavior tests, Prisma schema validity, a
-database-free production build, and production dependency advisories.
+database-free production build, production dependency advisories, and the full
+Docker Compose migration/readiness path.
+
+## Documentation
+
+- [Architecture and invariants](docs/architecture.md)
+- [Configuration reference](docs/configuration.md)
+- [Self-hosting operations](docs/operations.md)
+- [Reproducible demo](demo/README.md)
+- [Security policy](SECURITY.md)
+- [Contributing](CONTRIBUTING.md)
+- [Changelog](CHANGELOG.md)
 
 ## Product boundaries
 
@@ -193,5 +224,5 @@ publishes release announcements, while the other maintains agent-facing
 repository contracts. They meet at the release workflow and are catalogued
 together in [ABVX Lab](https://lab.abvx.xyz/).
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for development expectations and the
-[v0.3.0 plan](docs/implementation-plan-v0.3.0.md) for acceptance gates.
+The completed [v0.3.0 implementation plan](docs/implementation-plan-v0.3.0.md)
+records the acceptance gates behind the current release line.
