@@ -6,6 +6,7 @@
 
 - Public repositories owned by `GITHUB_AUTO_ACTIVATE_OWNERS` now activate automatically.
 - Added authenticated release polling with hourly GitHub Actions and a daily Vercel Cron fallback.
+- Polling reports per-destination delivery status and avoids duplicate log records for already ingested releases.
 - Reworked the README around a copyable preview, self-hosting path, and clear product boundaries.
 - Added architecture, configuration, and operations references.
 - Refreshed GitHub About metadata, discovery topics, and the current measured demo.
