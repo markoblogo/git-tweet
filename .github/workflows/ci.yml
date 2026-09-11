@@ -26,3 +26,11 @@ jobs:
       - run: npm run db:validate
       - run: npm run build
       - run: npm audit --omit=dev --audit-level=high
+      - name: Verify Docker Compose runtime
+        run: |
+          cp .env.example .env.local
+          docker compose up --build --detach --wait --wait-timeout 120
+          curl --fail --silent --show-error 'http://127.0.0.1:3000/api/health?ready=1'
+      - name: Stop Docker Compose runtime
+        if: always()
+        run: docker compose down --volumes
