@@ -59,6 +59,9 @@ export async function pollRecentGitHubReleases(params: {
   ok: boolean;
   scannedRepositories: number;
   discoveredReleases: number;
+  processedReleases: number;
+  existingReleases: number;
+  deliveryStatus: Record<string, number>;
   errors: Array<{ repository: string; message: string }>;
 }> {
   const owners = autoActivateOwners();
@@ -80,6 +83,9 @@ export async function pollRecentGitHubReleases(params: {
   );
   const errors: Array<{ repository: string; message: string }> = [];
   let discoveredReleases = 0;
+  let processedReleases = 0;
+  let existingReleases = 0;
+  const selectedSourceKeys = new Set<string>();
 
   for (let index = 0; index < repositories.length; index += 10) {
     const batch = repositories.slice(index, index + 10);
@@ -97,7 +103,19 @@ export async function pollRecentGitHubReleases(params: {
           );
           discoveredReleases += recent.length;
 
+          const sourceKeys = recent.map((release) => `gh:release:${release.id}:published`);
+          sourceKeys.forEach((sourceKey) => selectedSourceKeys.add(sourceKey));
+          const existingEvents = sourceKeys.length
+            ? await prisma.event.findMany({
+                where: { sourceKey: { in: sourceKeys } },
+                select: { sourceKey: true }
+              })
+            : [];
+          const existingSourceKeys = new Set(existingEvents.map((event) => event.sourceKey));
+          existingReleases += existingSourceKeys.size;
+
           for (const release of recent) {
+            if (existingSourceKeys.has(`gh:release:${release.id}:published`)) continue;
             await handleReleasePublished({
               action: "published",
               repository: {
@@ -115,6 +133,7 @@ export async function pollRecentGitHubReleases(params: {
                 published_at: release.published_at as string
               }
             });
+            processedReleases += 1;
           }
         } catch (error) {
           errors.push({
@@ -126,10 +145,28 @@ export async function pollRecentGitHubReleases(params: {
     );
   }
 
+  const posts = selectedSourceKeys.size
+    ? await prisma.post.findMany({
+        where: { event: { sourceKey: { in: [...selectedSourceKeys] } } },
+        select: { destination: true, status: true }
+      })
+    : [];
+  const deliveryStatus = posts.reduce<Record<string, number>>((counts, post) => {
+    const key = `${post.destination}:${post.status}`;
+    counts[key] = (counts[key] ?? 0) + 1;
+    return counts;
+  }, {});
+  const hasDeliveryFailures = Object.entries(deliveryStatus).some(
+    ([key, count]) => key.endsWith(":FAILED") && count > 0
+  );
+
   return {
-    ok: errors.length === 0,
+    ok: errors.length === 0 && !hasDeliveryFailures,
     scannedRepositories: repositories.length,
     discoveredReleases,
+    processedReleases,
+    existingReleases,
+    deliveryStatus,
     errors
   };
 }
