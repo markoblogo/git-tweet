@@ -7,6 +7,7 @@ import { postToBluesky, postToXOrFail, saveSkippedDuplicate, saveSkippedPolicy, 
 import { getShareableRepoUrl } from "@/lib/services/link-shortener";
 import { buildSocialTargetUrl } from "@/lib/services/social-link";
 import type { GitHubCreateTagPayload, GitHubReleasePayload } from "@/types/events";
+import { decryptToken } from "@/lib/services/token-vault";
 
 async function ensureRepository(payload: {
   githubId: string;
@@ -175,7 +176,8 @@ function latestXAccessToken(
     .filter((account) => account.provider === "X")
     .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 
-  return xAccounts[0]?.accessToken;
+  const token = xAccounts[0]?.accessToken;
+  return token ? decryptToken(token) : token;
 }
 
 function releaseEventType(params: { releaseTag: string; existingPublishedReleaseCount: number }): EventType {

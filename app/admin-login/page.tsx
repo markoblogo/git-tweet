@@ -1,7 +1,12 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { ADMIN_COOKIE_NAME, getAdminGatePassword, isValidAdminCookie } from "@/lib/services/admin-gate";
+import {
+  ADMIN_COOKIE_NAME,
+  adminGateMode,
+  getAdminGatePassword,
+  isValidAdminCookie
+} from "@/lib/services/admin-gate";
 
 type Props = {
   searchParams?: Promise<{
@@ -25,6 +30,17 @@ function sanitizeNextPath(nextPath: string | undefined): string {
 export default async function AdminLoginPage({ searchParams }: Props) {
   const gatePassword = getAdminGatePassword();
   if (!gatePassword) {
+    if (adminGateMode() === "misconfigured") {
+      return (
+        <section className="card auth-card">
+          <span className="eyebrow">Configuration required</span>
+          <h1>Operator console is locked</h1>
+          <p>
+            Set <code>ADMIN_GATE_PASSWORD</code> and <code>TOKEN_ENCRYPTION_KEY</code>, then restart the app.
+          </p>
+        </section>
+      );
+    }
     redirect("/");
   }
 

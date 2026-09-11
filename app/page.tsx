@@ -6,6 +6,8 @@ import { requireAdminPageAccess } from "@/lib/services/admin-gate";
 import { getBlueskyConnectionState } from "@/lib/services/bluesky-connection";
 import { getXConnectionState } from "@/lib/services/x-connection";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   await requireAdminPageAccess("/");
 

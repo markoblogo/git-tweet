@@ -52,7 +52,9 @@ Please ensure these pass before submitting:
 
 ```bash
 npm run lint
+npm run typecheck
 npm test
+npm run db:validate
 npm run build
 ```
 

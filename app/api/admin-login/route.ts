@@ -4,7 +4,8 @@ import {
   buildAdminCookieValue,
   getAdminGatePassword,
   isValidAdminPassword,
-  sanitizeNextPath
+  sanitizeNextPath,
+  shouldUseSecureAdminCookie
 } from "@/lib/services/admin-gate";
 
 export async function POST(request: Request) {
@@ -27,7 +28,7 @@ export async function POST(request: Request) {
     name: ADMIN_COOKIE_NAME,
     value: await buildAdminCookieValue(gatePassword),
     httpOnly: true,
-    secure: true,
+    secure: shouldUseSecureAdminCookie(appUrl),
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 12

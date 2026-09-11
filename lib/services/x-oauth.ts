@@ -2,6 +2,7 @@ import { Buffer } from "node:buffer";
 import { Provider } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { ensureOwnerUser } from "@/lib/services/owner-user";
+import { encryptToken } from "@/lib/services/token-vault";
 
 function xRedirectUri(appUrl: string): string {
   return process.env.X_REDIRECT_URI || `${appUrl}/api/connect/x/callback`;
@@ -148,6 +149,8 @@ export async function saveXConnection(params: {
   providerUser: string;
 }): Promise<void> {
   const ownerUser = await ensureOwnerUser();
+  const encryptedAccessToken = encryptToken(params.accessToken);
+  const encryptedRefreshToken = params.refreshToken ? encryptToken(params.refreshToken) : undefined;
 
   await prisma.connectedAccount.upsert({
     where: {
@@ -158,16 +161,16 @@ export async function saveXConnection(params: {
     },
     update: {
       userId: ownerUser.id,
-      accessToken: params.accessToken,
-      refreshToken: params.refreshToken,
+      accessToken: encryptedAccessToken,
+      refreshToken: encryptedRefreshToken,
       expiresAt: params.expiresIn ? new Date(Date.now() + params.expiresIn * 1000) : null
     },
     create: {
       userId: ownerUser.id,
       provider: Provider.X,
       providerUser: params.providerUser,
-      accessToken: params.accessToken,
-      refreshToken: params.refreshToken,
+      accessToken: encryptedAccessToken,
+      refreshToken: encryptedRefreshToken,
       expiresAt: params.expiresIn ? new Date(Date.now() + params.expiresIn * 1000) : null
     }
   });
