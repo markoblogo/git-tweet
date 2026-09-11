@@ -22,6 +22,11 @@ stack starts. Restart the app after changing a value.
 | `GITHUB_WEBHOOK_SECRET` | To ingest | Shared secret used to verify webhook signatures. |
 | `GITHUB_REDIRECT_URI` | No | Defaults to `<APP_URL>/api/connect/github/callback`. It must exactly match the OAuth App callback. |
 | `GITHUB_OAUTH_SCOPE` | No | Defaults to `read:user public_repo`. |
+| `GITHUB_AUTO_ACTIVATE_OWNERS` | No | Comma-separated owners whose public repositories activate automatically. Private repositories remain blocked. |
+| `CRON_SECRET` | For polling | Bearer token protecting `GET /api/cron/releases`; Vercel Cron supplies it automatically. |
+
+For the included hourly GitHub Actions poll, store the same `CRON_SECRET` as
+the repository Actions secret `GIT_TWEET_CRON_SECRET`.
 
 ## X
 

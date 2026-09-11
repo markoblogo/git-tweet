@@ -2,6 +2,7 @@ import { Provider } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { ensureOwnerUser } from "@/lib/services/owner-user";
 import { decryptToken, encryptToken } from "@/lib/services/token-vault";
+import { shouldAutoActivateRepository } from "@/lib/services/repository-policy";
 
 export type GitHubRepoPayload = {
   id: number;
@@ -11,6 +12,7 @@ export type GitHubRepoPayload = {
   html_url: string;
   default_branch: string;
   topics?: string[];
+  description?: string | null;
   owner: { login: string };
 };
 
@@ -53,7 +55,7 @@ function githubOAuthScope(): string {
   return requested.join(" ");
 }
 
-async function githubFetch<T>(path: string, accessToken: string): Promise<T> {
+export async function githubFetch<T>(path: string, accessToken: string): Promise<T> {
   const response = await fetch(`${githubApiBase()}${path}`, {
     headers: {
       authorization: `Bearer ${accessToken}`,
@@ -218,6 +220,10 @@ export async function syncGitHubRepositories(): Promise<{
   const privateRepos = partition.privateRepos.length;
 
   for (const repo of repos) {
+    const autoActivate = shouldAutoActivateRepository({
+      owner: repo.owner.login,
+      isPrivate: repo.private
+    });
     const repoRecord = await prisma.repository.upsert({
       where: { githubId: String(repo.id) },
       update: {
@@ -242,19 +248,19 @@ export async function syncGitHubRepositories(): Promise<{
         isPrivate: repo.private,
         settings: {
           create: {
-            isActive: false
+            isActive: autoActivate
           }
         }
       }
     });
 
-    if (repo.private) {
+    if (repo.private || autoActivate) {
       await prisma.repositorySettings.upsert({
         where: { repositoryId: repoRecord.id },
-        update: { isActive: false },
+        update: { isActive: autoActivate },
         create: {
           repositoryId: repoRecord.id,
-          isActive: false
+          isActive: autoActivate
         }
       });
     }

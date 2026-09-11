@@ -1,0 +1,22 @@
+name: Poll releases
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Poll public repository releases
+        env:
+          CRON_SECRET: ${{ secrets.GIT_TWEET_CRON_SECRET }}
+        run: >-
+          curl --fail-with-body --silent --show-error
+          --header "Authorization: Bearer ${CRON_SECRET}"
+          https://admin.git-tweet.abvx.xyz/api/cron/releases
