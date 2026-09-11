@@ -2,6 +2,7 @@ import { Provider } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { githubFetch, type GitHubRepoPayload } from "@/lib/services/github-client";
 import { handleReleasePublished } from "@/lib/services/github-ingestion";
+import { rerunFailedPost } from "@/lib/services/post-rerun";
 import { autoActivateOwners } from "@/lib/services/repository-policy";
 import { decryptToken } from "@/lib/services/token-vault";
 
@@ -61,6 +62,7 @@ export async function pollRecentGitHubReleases(params: {
   discoveredReleases: number;
   processedReleases: number;
   existingReleases: number;
+  retriedPosts: number;
   deliveryStatus: Record<string, number>;
   errors: Array<{ repository: string; message: string }>;
 }> {
@@ -145,6 +147,17 @@ export async function pollRecentGitHubReleases(params: {
     );
   }
 
+  const failedPosts = selectedSourceKeys.size
+    ? await prisma.post.findMany({
+        where: {
+          status: "FAILED",
+          event: { sourceKey: { in: [...selectedSourceKeys] } }
+        },
+        select: { id: true }
+      })
+    : [];
+  for (const post of failedPosts) await rerunFailedPost(post.id);
+
   const posts = selectedSourceKeys.size
     ? await prisma.post.findMany({
         where: { event: { sourceKey: { in: [...selectedSourceKeys] } } },
@@ -166,6 +179,7 @@ export async function pollRecentGitHubReleases(params: {
     discoveredReleases,
     processedReleases,
     existingReleases,
+    retriedPosts: failedPosts.length,
     deliveryStatus,
     errors
   };
