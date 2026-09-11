@@ -1,539 +1,197 @@
 <p align="center">
-  <img src="assets/logo.png" alt="git-tweet logo" width="120" />
+  <img src="assets/logo.png" alt="git-tweet logo" width="112" />
 </p>
 
-<h1 align="center">git-tweet</h1>
+# git-tweet
 
-<p align="center">
-  Low-noise GitHub milestones → social posts.
-</p>
+**Publish meaningful GitHub releases to X and Bluesky—with deterministic rules, deduplication, logs, and retries.**
 
-<p align="center">
-  Live: <a href="https://git-tweet.abvx.xyz/">https://git-tweet.abvx.xyz/</a>
-</p>
+[![CI](https://github.com/markoblogo/git-tweet/actions/workflows/ci.yml/badge.svg)](https://github.com/markoblogo/git-tweet/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/markoblogo/git-tweet)](https://github.com/markoblogo/git-tweet/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-<p align="center">
-  Listed on ABVX Lab: <a href="https://lab.abvx.xyz/">https://lab.abvx.xyz/</a>
-</p>
+[Public overview](https://git-tweet.abvx.xyz/) · [Reproducible demo](demo/README.md) · [Post policy](#post-policy) · [Self-host](#self-host-with-docker)
 
-<p align="center">
-  <a href="#what-it-does">What it does</a> ·
-  <a href="#post-policy">Post policy</a> ·
-  <a href="#quickstart">Quickstart</a> ·
-  <a href="#real-end-to-end-test">Real end-to-end test</a> ·
-  <a href="#local-webhook-replay">Local webhook replay</a>
-</p>
+![Release to social-post workflow](assets/og.png)
 
-<p align="center">
-  <img src="assets/og.png" alt="git-tweet cover" width="860" />
-</p>
+## Why it exists
 
----
+Per-repository posting Actions are useful when one workflow and one network are
+enough. `git-tweet` is a small, single-operator hub for people who ship across
+several repositories and need one place to see policy decisions, duplicates,
+failures, and manual retries.
 
-## What it does
-
-`git-tweet` is a small conservative tool that watches **public GitHub repositories you explicitly activate** and auto-posts **meaningful release milestones** to social networks (currently: X and Bluesky).
-
-The public landing page lives at [git-tweet.abvx.xyz](https://git-tweet.abvx.xyz/). The repo stays the source of truth for setup, policy, and release workflow details.
-
-Operational note:
-- keep the public landing and the operator deployment separate
-- set `APP_URL` to the operator deployment URL, not the public landing URL
-- point GitHub webhooks to the operator deployment `/api/webhooks/github`
-
-It’s designed for “I’m shipping, I forget to post” workflows:
-- no AI
-- no commit spam
-- predictable rules
-- full logging and rerun support
-
----
-
-## Post policy
-
-### Events (low-noise)
-Supported in the current stage:
-
-- **Release published**
-- **First public release**
-- **Major version**
-- **Semver tag** (only when not covered by a release)
-
-Not supported (intentionally out of scope in this stage):
-- commits, PRs, branches, issues, stars, “milestones”, LinkedIn, queues/cron, notifications
-
-### Dedup rules
-A single release should produce **one** post:
-- `FIRST_PUBLIC_RELEASE` > `MAJOR_VERSION` > `RELEASE_PUBLISHED`
-- `TAG_ONLY` is used only when there is no release covering the same semver
-- For repositories that already use release publishing, semver tag posts are skipped conservatively to avoid duplicate social posts
-
-### Post format
-Each post is structured for readability:
-
-1) **What happened** (Released / Major release / First public release / Tagged)  
-2) **What it is** (one-line blurb; always present)  
-3) **Link** (repository URL; stable social preview is preferred over release-page cards)  
-4) **0–2 hashtags** (from repo Topics; conservative normalization + optional fallback)
-
-Example:
 ```text
-Released v0.1.2: git-tweet
-
-Auto-post meaningful GitHub releases to social posts (low-noise).
-
-https://github.com/markoblogo/git-tweet
-
-#opensource #devtools
+GitHub Release → signed webhook → policy + dedup → X / Bluesky → delivery log
 ```
 
-### Where “what it is” comes from
-In this stage:
-- repo-specific overrides for key repos (e.g. `git-tweet`, `AGENTS.md_generator`)
-- fallback to GitHub repository description (if present)
-- final fallback: `Project update.`
+- public repositories only;
+- newly discovered repositories stay inactive;
+- release-first rules prevent release/tag duplicates;
+- each destination succeeds or fails independently;
+- no AI, scheduling, commit spam, billing, or multi-user roles.
 
-### Link target policy
+## Preview a post in one minute
 
-In the current stage, `git-tweet` always uses the **repository URL** as the post link target.
+Requires Node.js 20.9 or newer.
 
-Reason:
-- GitHub repository links produce more stable social preview cards than release pages
-- Branding is more predictable
-- The behavior stays conservative and easy to reason about
-
----
-
-## Scope in this stage (personal workflow)
-
-Included:
-- GitHub OAuth connect flow
-- X OAuth connect flow (default mode)
-- Repository sync from connected GitHub account
-- Public/private repository distinction (posting: public only)
-- Explicit repository activation/deactivation
-- Release/tag ingestion with webhook signature verification
-- Optional shortener integration with safe fallback
-- Logs/history with lifecycle clarity
-- Manual rerun path for failed posts
-- Local replay scripts for signed webhooks
-
-Out of scope:
-- Multi-user SaaS onboarding, billing, org roles
-- LinkedIn, AI, queues/cron, notifications, advanced analytics
-
----
-
-## Quickstart
-
-### 1) Install
-```bash
+```sh
 npm install
+npm run preview -- --project my-project --tag v1.2.0 \
+  --description "A short, factual description of the release."
 ```
 
-### 2) Configure env
+This uses the production composer and sends nothing. The committed
+[v0.3.0 example](demo/v0.3.0-preview.txt) records its measured output.
 
-```bash
+## Self-host with Docker
+
+1. Create the local configuration:
+
+   ```sh
+   cp .env.example .env.local
+   openssl rand -base64 32
+   ```
+
+2. Put the generated value in `TOKEN_ENCRYPTION_KEY`, choose a strong
+   `ADMIN_GATE_PASSWORD`, and configure the GitHub/X/Bluesky values you use.
+
+3. Start the application and PostgreSQL:
+
+   ```sh
+   docker compose up --build
+   ```
+
+4. Open `http://127.0.0.1:3000`. Readiness is available at
+   `GET /api/health?ready=1`.
+
+The container applies committed Prisma migrations before starting. The named
+Docker volume retains the database between restarts.
+
+## Local development
+
+```sh
 cp .env.example .env.local
-```
-
-Minimal required:
-
-- DATABASE_URL
-- APP_URL (operator deployment base URL)
-- GITHUB_WEBHOOK_SECRET
-
-Plus OAuth credentials:
-
-- GITHUB_CLIENT_ID
-- GITHUB_CLIENT_SECRET
-- X_CLIENT_ID
-- X_CLIENT_SECRET (for confidential client apps)
-- X_CONNECTION_MODE=oauth
-
-Plus Bluesky manual mode credentials:
-
-- BLUESKY_ENABLED=true
-- BLUESKY_HANDLE
-- BLUESKY_APP_PASSWORD
-- BLUESKY_SERVICE_URL=https://bsky.social
-
-### 3) Prisma
-
-```bash
-npm run db:generate
+npm install
 npm run db:migrate -- --name init
-```
-
-### 4) Run
-
-```bash
 npm run dev
 ```
 
-Open:
+For webhook and release testing, use a clean production build:
 
-- /connect/github
-- /connect/x
-- /connect/bluesky
-- /repositories
-- /logs
-
-### Stable local mode for release testing
-
-For day-to-day code changes, `npm run dev` is fine.
-
-For **real webhook/release testing**, prefer production mode:
-
-```bash
+```sh
 npm run serve:e2e
 ```
 
-Why:
-- `next dev` can occasionally produce unstable hot-reload bundles in this repo during long sessions
-- `serve:e2e` uses a clean production build and is more reliable for GitHub webhook tests, reruns, and UI verification
+The operator pages are `/connect/github`, `/connect/x`, `/connect/bluesky`,
+`/repositories`, and `/logs`.
 
-If the dev server ever starts serving broken CSS/chunks, use:
+## Connect GitHub
 
-```bash
-npm run dev:clean
-```
+Create a GitHub OAuth App with:
 
----
+- homepage: your operator `APP_URL`;
+- callback: `<APP_URL>/api/connect/github/callback`;
+- scope: `read:user public_repo`.
 
-## Manual setup: GitHub OAuth App
+Add its client ID and secret to `.env.local`, open `/connect/github`, complete
+OAuth, and sync repositories. Private repositories are visible as unsupported
+and cannot be activated.
 
-1. GitHub -> Settings -> Developer settings -> OAuth Apps -> New OAuth App
+For each repository you activate, add a GitHub webhook:
 
-2. Homepage URL:
+- payload URL: `<APP_URL>/api/webhooks/github`;
+- content type: `application/json`;
+- secret: the same `GITHUB_WEBHOOK_SECRET`;
+- events: **Releases**, plus **Branch or tag creation** only if you want tag fallback.
 
-- http://127.0.0.1:3000
+`APP_URL` must be the stable operator deployment. GitHub cannot send webhooks
+to localhost; use ngrok or Cloudflare Tunnel for an end-to-end local test.
 
-3. Callback URL:
+## Connect destinations
 
-- http://127.0.0.1:3000/api/connect/github/callback
+### X
 
-4. Copy Client ID/Secret into `.env.local`
+The default `X_CONNECTION_MODE=oauth` uses an X OAuth 2.0 Web/Automated App.
+Set its callback to `<APP_URL>/api/connect/x/callback` and grant read/write plus
+offline access. Manual token mode remains available with
+`X_CONNECTION_MODE=manual_env` and `X_ACCESS_TOKEN`.
 
----
+### Bluesky
 
-## Manual setup: X OAuth 2.0 App
+Set `BLUESKY_ENABLED=true`, `BLUESKY_HANDLE`, and a Bluesky app password in
+`BLUESKY_APP_PASSWORD`. The main account password is neither required nor
+recommended.
 
-1. Create an X app with OAuth 2.0
+## Post policy
 
-2. App type:
+Supported signals:
 
-- Web App / Automated App / Bot (confidential client)
+1. first public release;
+2. major version;
+3. published release;
+4. semver tag, only when a release does not cover it.
 
-3. Callback URL:
+Drafts, prereleases, private repositories, inactive repositories, commits,
+pull requests, branches, issues, and stars do not publish posts. The generated
+message contains the event, project name, one-line description, stable
+repository URL, and at most two normalized topic hashtags.
 
-- http://127.0.0.1:3000/api/connect/x/callback
+## Test without publishing
 
-4. App permissions:
-
-- Read and write
-
-5. Scopes requested by the app (via `X_OAUTH_SCOPE`):
-
-- tweet.read tweet.write users.read offline.access
-
-6. Copy Client ID (+ Client Secret) into `.env.local`
-
----
-
-## Manual setup: Bluesky personal mode
-
-Bluesky is currently supported in **manual env mode** only.
-
-Required env vars:
-
-- `BLUESKY_ENABLED=true`
-- `BLUESKY_HANDLE`
-- `BLUESKY_APP_PASSWORD`
-- `BLUESKY_SERVICE_URL=https://bsky.social`
-
-Notes:
-
-- Use an **app password**, not your main Bluesky account password
-- There is **no Bluesky OAuth UI** in this stage
-- If Bluesky is disabled or not configured, X posting still proceeds and Bluesky is logged as skipped
-
----
-
-## Connect flows
-
-### Connect GitHub
-
-- Open /connect/github
-- Click **Connect GitHub**
-- Complete OAuth
-- Click **Sync repositories**
-
-### Connect X
-
-- Open /connect/x
-- Ensure `X_CONNECTION_MODE=oauth`
-- Click **Connect X**
-- Complete OAuth
-
-### Connect Bluesky
-
-- Open /connect/bluesky
-- Set the Bluesky env vars in `.env.local`
-- Restart the app
-- Verify the status page shows Bluesky as configured
-
----
-
-## Repository selection flow
-
-- Open /repositories
-- Filter (public, private, active, inactive)
-- Activate only public repositories you want to post from
-- Newly discovered public repos are synced as **inactive** by default
-- Private repos are shown as unsupported and cannot be activated
-
----
-
-## Use git-tweet as a posting hub for another repo
-
-`git-tweet` can be used as a central posting hub for another public repository you own, for example `markoblogo/lab.abvx`.
-
-Minimal flow:
-
-1. Start `git-tweet` locally:
-
-```bash
-npm run serve:e2e
-```
-
-2. Expose it publicly with ngrok:
-
-```bash
-ngrok http 3000
-```
-
-3. In the target repository, add a GitHub webhook:
-
-- Payload URL:
-  - `https://<your-ngrok-url>/api/webhooks/github`
-- Content type:
-  - `application/json`
-- Secret:
-  - same value as `GITHUB_WEBHOOK_SECRET`
-- Events:
-  - `Releases`
-
-4. In `git-tweet`:
-
-- open `/connect/github`
-- sync repositories
-- open `/repositories`
-- activate the target public repo
-
-5. Publish a GitHub Release in that target repository.
-
-Expected result:
-
-- `/logs` shows a new event for that repo
-- separate destination records appear for `X` and `BLUESKY`
-- posts are published without adding any posting logic to the target repository itself
-
-Important:
-
-- GitHub cannot deliver webhooks to `127.0.0.1`, so a tunnel is required for local testing
-- for reliable automatic posting, move the webhook to a stable operator `APP_URL` instead of a temporary tunnel
-- the webhook URL must include `/api/webhooks/github`
-- the target repo must be explicitly activated inside `git-tweet`
-- draft releases do not post; only published releases do
-
-Optional cleanup after a pure test release:
-
-```bash
-gh release delete <tag> --repo <owner/repo> --yes
-git push origin :refs/tags/<tag>
-git tag -d <tag>
-```
-
----
-
-## Preflight checklist (make your posts look good)
-
-Before you publish your first release and let `git-tweet` post it, spend 2 minutes on repo presentation.  
-Most "ugly posts" come from missing repo metadata, not from `git-tweet`.
-
-### 1) Repository "About" fields (GitHub Repo details)
-
-In your repository sidebar (or Settings -> General), set:
-
-- **Description**: a short one-liner (used as fallback for the "what it is" line)
-- **Topics**: 6-10 relevant topics (used to generate 0-2 hashtags)
-- **Website** (optional): project page or docs link
-
-Tip: if Topics are empty, hashtags may be empty too.
-
-### 2) Social preview image (GitHub Open Graph)
-
-When posting a GitHub release/repo link, social networks typically use GitHub's **Social preview** image.
-
-Set it once:
-- Repo -> **Settings** -> **Social preview** -> upload a 1280x640 image (`assets/og.png` is a good default)
-
-This is what becomes the card thumbnail in X and other networks.
-
-### 3) Release hygiene
-
-For the best post quality, make releases meaningful:
-- Use semver tags (`v0.1.0`, `v1.0.0`, ...)
-- Add a short release title and a few bullet points in release notes
-
-`git-tweet` links to the repository URL for a more stable social preview card.
-
-### 4) Sync repositories after changes
-
-If you update repo description/topics, re-sync in `git-tweet`:
-- `/connect/github` -> **Sync repositories**
-
-That pulls updated description/topics into the local database and improves post output.
-
-### 5) Keep it low-noise
-
-Activate only the repos you want to post from:
-- `/repositories` -> activate selected public repos
-
-Newly discovered public repos are synced as **inactive** by default.
-
----
-
-## Real end-to-end test
-
-### Why you need a tunnel
-
-GitHub cannot deliver webhooks to 127.0.0.1 / localhost.
-
-For real GitHub release events you need a **publicly reachable URL** that forwards to your local dev server.
-
-### Option A: ngrok (recommended)
-
-1. Start the app:
-
-```bash
-npm run serve:e2e
-```
-
-2. Start ngrok in another terminal:
-
-```bash
-ngrok http 3000
-```
-
-3. Add GitHub webhook (for each test repo):  
-   Repo -> Settings -> Webhooks -> Add webhook
-
-- Payload URL:
-  - https://<ngrok-id>.ngrok-free.app/api/webhooks/github
-
-- Content type:
-  - application/json
-
-- Secret:
-  - same as GITHUB_WEBHOOK_SECRET
-
-- Events:
-  - Releases
-  - Branch or tag creation (optional, for tag tests)
-
-4. Publish a release in:
-
-- markoblogo/git-tweet
-- markoblogo/AGENTS.md_generator
-
-5. Verify:
-
-- Open /logs
-- You should see a new event + post record
-- You should see separate destination rows for `X` and `BLUESKY`
-- Status should be POSTED (or FAILED with a clear error)
-- If POSTED, check your X timeline and Bluesky profile
-
-### Option B: cloudflared
-
-```bash
-cloudflared tunnel --url http://localhost:3000
-```
-
-Use the provided `https://...trycloudflare.com/api/webhooks/github` as payload URL.
-
----
-
-## Local webhook replay (no GitHub delivery)
-
-Fixtures:
-
-- fixtures/webhooks/release-published.json
-- fixtures/webhooks/create-tag.json
-
-Commands:
-
-```bash
+```sh
+npm run preview
 npm run replay:release
 npm run replay:tag
 ```
 
-These scripts sign payloads using GITHUB_WEBHOOK_SECRET.
+Preview never writes to the database or a network. Replay signs the included
+fixture with `GITHUB_WEBHOOK_SECRET` and exercises ingestion, policy, dedup,
+posting adapters, and logs. A real end-to-end acceptance still requires a
+public webhook URL and configured destination credentials.
 
-This validates:
+## Security and upgrades
 
-- webhook verification
-- ingestion
-- dedup
-- tweet composition
-- posting to X and Bluesky
-- logs/history
+- The operator console fails closed in production when
+  `ADMIN_GATE_PASSWORD` is absent.
+- New GitHub and X OAuth tokens use AES-256-GCM with
+  `TOKEN_ENCRYPTION_KEY`.
+- Existing plaintext token records remain readable during the v0.3.0 upgrade
+  and are replaced with encrypted values when the connection is saved again.
+- Never rotate `TOKEN_ENCRYPTION_KEY` until stored OAuth accounts have been
+  reconnected or migrated.
+- Webhooks require GitHub's HMAC SHA-256 signature.
+- Report vulnerabilities through GitHub private security advisories; see
+  [SECURITY.md](SECURITY.md).
 
-But it does not validate real GitHub delivery (use a tunnel for that).
+From v0.2.0:
 
----
+```sh
+git pull
+npm install
+npm run db:deploy
+```
 
-## Recovery for failed posts
+Then set the two new security variables and reconnect GitHub/X once to replace
+legacy plaintext tokens.
 
-If a release reaches `git-tweet` but one destination fails, use the built-in recovery path:
+## Quality gate
 
-1. Fix the underlying connection issue (`/connect/x` for expired X OAuth, `/connect/bluesky` or env for Bluesky).
-2. Open `/logs` and rerun the failed destination.
-3. Confirm the destination row changes from `FAILED` to `POSTED`.
+```sh
+npm run ci
+npm audit --omit=dev --audit-level=high
+```
 
-This is useful when webhook delivery worked, but a provider token expired after the event was ingested.
+CI verifies ESLint, TypeScript, 51 behavior tests, Prisma schema validity, a
+database-free production build, and production dependency advisories.
 
-## Observability & reliability
+## Product boundaries
 
-- Private repositories are excluded from posting scope
-- Newly synced public repositories stay inactive until explicitly activated
-- Duplicate events are logged as SKIPPED_DUPLICATE
-- Policy/guardrail skips are logged as SKIPPED_POLICY with a reason
-- Shortener failures never block post creation
-- Manual rerun exists for failed posts (/logs)
-- Each destination is logged independently (`SYSTEM`, `X`, `BLUESKY`)
+`git-tweet` remains independent from
+[AGENTS.md Generator](https://github.com/markoblogo/AGENTS.md_generator): one
+publishes release announcements, while the other maintains agent-facing
+repository contracts. They meet at the release workflow and are catalogued
+together in [ABVX Lab](https://lab.abvx.xyz/).
 
----
-
-## API endpoints (relevant)
-
-- POST /api/webhooks/github
-- GET /api/connect/github/start
-- GET /api/connect/github/callback
-- POST /api/connect/github/sync
-- GET /api/connect/x/start
-- GET /api/connect/x/callback
-- PATCH /api/repositories/:repositoryId/activation
-- POST /api/posts/:postId/rerun
-
----
-
-## Roadmap (intentionally small)
-
-- Refresh-token renewal flow for X
-- Bluesky OAuth UI (manual env mode is sufficient for now)
-- Better error surfacing for sync/connect in UI
-- Optional: editable per-repo blurb (instead of code overrides)
-- Optional: additional social connectors (kept modular)
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development expectations and the
+[v0.3.0 plan](docs/implementation-plan-v0.3.0.md) for acceptance gates.

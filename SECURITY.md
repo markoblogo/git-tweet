@@ -38,6 +38,13 @@ In-scope examples:
 - Unsafe logging of secrets
 - Vulnerabilities that could cause unauthorized posting or data exposure
 
+## Operator requirements
+
+Production deployments must set `ADMIN_GATE_PASSWORD` and a base64-encoded
+32-byte `TOKEN_ENCRYPTION_KEY`. New GitHub and X OAuth tokens are encrypted at
+rest with AES-256-GCM. Keep the encryption key outside the database and back it
+up securely; losing it requires reconnecting stored accounts.
+
 Out of scope examples:
 - Social engineering
 - Physical access attacks

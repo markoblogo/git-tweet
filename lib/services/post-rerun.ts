@@ -1,6 +1,7 @@
 import { PostDestination, PostStatus } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { publishToBluesky, publishToX } from "@/lib/services/posting";
+import { decryptToken } from "@/lib/services/token-vault";
 
 function latestXAccessToken(
   accounts: Array<{ provider: string; accessToken: string | null; updatedAt: Date }>
@@ -9,7 +10,8 @@ function latestXAccessToken(
     .filter((account) => account.provider === "X")
     .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 
-  return xAccounts[0]?.accessToken;
+  const token = xAccounts[0]?.accessToken;
+  return token ? decryptToken(token) : token;
 }
 
 export function isRerunnableStatus(status: PostStatus): boolean {

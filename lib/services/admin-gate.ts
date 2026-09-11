@@ -8,6 +8,9 @@ const encoder = new TextEncoder();
 export const ADMIN_COOKIE_NAME = "git_tweet_admin";
 const ADMIN_COOKIE_PAYLOAD = "git-tweet-admin";
 
+type RuntimeEnv = Partial<Pick<NodeJS.ProcessEnv, "NODE_ENV" | "ADMIN_GATE_PASSWORD">>;
+export type AdminGateMode = "configured" | "disabled-dev" | "misconfigured";
+
 function getSubtleCrypto(): SubtleCrypto {
   return globalThis.crypto.subtle;
 }
@@ -24,8 +27,19 @@ async function signValue(secret: string, value: string): Promise<string> {
   return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-export function getAdminGatePassword(): string | null {
-  return process.env.ADMIN_GATE_PASSWORD || null;
+export function getAdminGatePassword(env: RuntimeEnv = process.env): string | null {
+  return env.ADMIN_GATE_PASSWORD?.trim() || null;
+}
+
+export function adminGateMode(env: RuntimeEnv = process.env): AdminGateMode {
+  if (getAdminGatePassword(env)) {
+    return "configured";
+  }
+  return env.NODE_ENV === "production" ? "misconfigured" : "disabled-dev";
+}
+
+export function shouldUseSecureAdminCookie(appUrl: string): boolean {
+  return appUrl.startsWith("https://");
 }
 
 export function sanitizeNextPath(nextPath: string | null): string {
@@ -57,7 +71,7 @@ export async function isValidAdminCookie(secret: string, cookieValue: string | u
   }
 
   const expected = await buildAdminCookieValue(secret);
-  return cookieValue === expected;
+  return safeEqual(cookieValue, expected);
 }
 
 function readCookieFromHeader(cookieHeader: string | null, cookieName: string): string | undefined {
@@ -83,6 +97,9 @@ export function isValidAdminPassword(password: string, gatePassword: string): bo
 export async function requireAdminPageAccess(nextPath: string): Promise<void> {
   const gatePassword = getAdminGatePassword();
   if (!gatePassword) {
+    if (adminGateMode() === "misconfigured") {
+      redirect(`/admin-login?error=not_configured&next=${encodeURIComponent(sanitizeNextPath(nextPath))}`);
+    }
     return;
   }
 
@@ -98,6 +115,12 @@ export async function requireAdminPageAccess(nextPath: string): Promise<void> {
 export async function requireAdminApiAccess(request: Request): Promise<NextResponse | null> {
   const gatePassword = getAdminGatePassword();
   if (!gatePassword) {
+    if (adminGateMode() === "misconfigured") {
+      return NextResponse.json(
+        { ok: false, error: "Operator console is not configured" },
+        { status: 503 }
+      );
+    }
     return null;
   }
 

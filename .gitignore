@@ -4,6 +4,7 @@ node_modules
 .env.local
 coverage
 *.log
+*.tsbuildinfo
 prisma/dev.db
 .DS_Store
 .vercel

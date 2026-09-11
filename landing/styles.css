@@ -117,6 +117,13 @@ h1 {
   max-width: 10ch;
 }
 
+h2 {
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  line-height: 1.08;
+  margin: 1rem 0;
+  max-width: 18ch;
+}
+
 .hero-text {
   font-size: 1.08rem;
   line-height: 1.7;
@@ -179,7 +186,16 @@ h1 {
   gap: 1rem;
 }
 
+.hero-copy,
+.hero-side,
+.proof-copy,
+.terminal {
+  min-width: 0;
+}
+
 .hero-cover {
+  width: 100%;
+  height: auto;
   border-radius: 22px;
   border: 1px solid var(--border);
   box-shadow: 0 24px 44px rgba(16, 32, 51, 0.12);
@@ -205,9 +221,75 @@ h1 {
   line-height: 1.6;
 }
 
+.proof {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 2rem;
+  align-items: center;
+  margin-top: 2rem;
+  padding: 2rem;
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.proof-copy p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.proof-copy a {
+  color: var(--brand);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.terminal {
+  overflow-x: auto;
+  border-radius: 18px;
+  padding: 1.25rem;
+  color: #e7edf7;
+  background: #0c1726;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.terminal code,
+.terminal pre {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+}
+
+.terminal code,
+.terminal small {
+  color: #92a7c2;
+}
+
+.terminal pre {
+  margin: 1rem 0;
+  white-space: pre-wrap;
+  line-height: 1.65;
+}
+
 @media (max-width: 860px) {
   .hero-shell {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .proof {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 1.5rem;
+  }
+
+  .nav-links {
+    width: 100%;
+  }
+
+  .hero-copy,
+  .hero-side,
+  .proof {
+    width: calc(100vw - 2rem);
+    max-width: calc(100vw - 2rem);
   }
 
   .hero-copy {

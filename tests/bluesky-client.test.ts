@@ -16,7 +16,7 @@ describe("buildBlueskyClient", () => {
 
     const { buildBlueskyClient } = await import("@/lib/services/bluesky-client");
     const client = buildBlueskyClient();
-    const result = await client.publishPost({ text: "hello" });
+    const result = await client.publishPost({ text: "hello", targetUrl: "https://example.com" });
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
@@ -31,7 +31,7 @@ describe("buildBlueskyClient", () => {
 
     const { buildBlueskyClient } = await import("@/lib/services/bluesky-client");
     const client = buildBlueskyClient();
-    const result = await client.publishPost({ text: "hello" });
+    const result = await client.publishPost({ text: "hello", targetUrl: "https://example.com" });
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
@@ -56,7 +56,7 @@ describe("buildBlueskyClient", () => {
 
     const { buildBlueskyClient: buildClient } = await import("@/lib/services/bluesky-client");
     const client = buildClient();
-    const result = await client.publishPost({ text: "hello" });
+    const result = await client.publishPost({ text: "hello", targetUrl: "https://example.com" });
 
     expect(result.ok).toBe(false);
     if (!result.ok) {

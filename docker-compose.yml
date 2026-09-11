@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: git_tweet
+      POSTGRES_USER: git_tweet
+      POSTGRES_PASSWORD: local-only-password
+    volumes:
+      - git-tweet-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U git_tweet -d git_tweet"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    env_file:
+      - .env.local
+    environment:
+      DATABASE_URL: postgresql://git_tweet:local-only-password@db:5432/git_tweet?schema=public
+      APP_URL: http://127.0.0.1:3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  git-tweet-db:

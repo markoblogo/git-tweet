@@ -1,6 +1,7 @@
 import { Provider } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { ensureOwnerUser } from "@/lib/services/owner-user";
+import { encryptToken } from "@/lib/services/token-vault";
 
 export function currentXConnectionMode(): string {
   return (process.env.X_CONNECTION_MODE ?? "oauth").toLowerCase();
@@ -32,6 +33,7 @@ export async function syncManualXConnection(): Promise<{
 
   const providerUser = process.env.X_ACCOUNT_ID || process.env.X_ACCOUNT_USERNAME || "manual-env-account";
   const user = await ensureOwnerUser();
+  const encryptedAccessToken = encryptToken(accessToken);
 
   await prisma.connectedAccount.upsert({
     where: {
@@ -42,13 +44,13 @@ export async function syncManualXConnection(): Promise<{
     },
     update: {
       userId: user.id,
-      accessToken
+      accessToken: encryptedAccessToken
     },
     create: {
       userId: user.id,
       provider: Provider.X,
       providerUser,
-      accessToken
+      accessToken: encryptedAccessToken
     }
   });
 

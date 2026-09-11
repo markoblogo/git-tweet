@@ -1,6 +1,7 @@
 import { Provider } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { ensureOwnerUser } from "@/lib/services/owner-user";
+import { decryptToken, encryptToken } from "@/lib/services/token-vault";
 
 export type GitHubRepoPayload = {
   id: number;
@@ -136,6 +137,7 @@ export async function saveGitHubConnection(params: {
   const userProfile = await githubFetch<{ id: number; login: string }>("/user", params.accessToken);
   const ownerUser = await ensureOwnerUser();
   const providerUser = userProfile.login;
+  const encryptedAccessToken = encryptToken(params.accessToken);
 
   await prisma.connectedAccount.upsert({
     where: {
@@ -146,13 +148,13 @@ export async function saveGitHubConnection(params: {
     },
     update: {
       userId: ownerUser.id,
-      accessToken: params.accessToken
+      accessToken: encryptedAccessToken
     },
     create: {
       userId: ownerUser.id,
       provider: Provider.GITHUB,
       providerUser,
-      accessToken: params.accessToken
+      accessToken: encryptedAccessToken
     }
   });
 
@@ -202,7 +204,7 @@ export async function syncGitHubRepositories(): Promise<{
   while (page <= 10) {
     const chunk = await githubFetch<GitHubRepoPayload[]>(
       `/user/repos?visibility=all&affiliation=owner&per_page=100&page=${page}&sort=updated`,
-      account.accessToken
+      decryptToken(account.accessToken)
     );
     repos.push(...chunk);
     if (chunk.length < 100) {
