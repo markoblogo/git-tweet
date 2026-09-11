@@ -122,6 +122,7 @@ To cover every current and future public repository owned by your account, set:
 
 ```sh
 GITHUB_AUTO_ACTIVATE_OWNERS="your-github-login"
+GITHUB_RELEASES_NOT_BEFORE="2026-09-11T18:30:00Z"
 CRON_SECRET="a-long-random-value"
 ```
 
@@ -129,6 +130,8 @@ The signed webhook remains the immediate path. `GET /api/cron/releases`,
 authenticated with `Authorization: Bearer <CRON_SECRET>`, recovers new
 repositories and missed deliveries. This repository includes an hourly GitHub
 Actions poll and a daily Vercel Cron fallback.
+Set `GITHUB_RELEASES_NOT_BEFORE` when enabling fleet coverage so old releases
+are not published retroactively. Polling processes eligible releases one at a time.
 
 For immediate announcements, add the same webhook to each public repository:
 

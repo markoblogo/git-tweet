@@ -2,7 +2,6 @@ import { Provider } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { githubFetch, type GitHubRepoPayload } from "@/lib/services/github-client";
 import { handleReleasePublished } from "@/lib/services/github-ingestion";
-import { rerunFailedPost } from "@/lib/services/post-rerun";
 import { autoActivateOwners } from "@/lib/services/repository-policy";
 import { decryptToken } from "@/lib/services/token-vault";
 
@@ -20,9 +19,13 @@ export type GitHubReleaseApiPayload = {
 export function selectRecentPublishedReleases(
   releases: GitHubReleaseApiPayload[],
   now = new Date(),
-  lookbackMinutes = 24 * 60
+  lookbackMinutes = 24 * 60,
+  notBefore: Date | null = null
 ): GitHubReleaseApiPayload[] {
-  const cutoff = now.getTime() - lookbackMinutes * 60_000;
+  const cutoff = Math.max(
+    now.getTime() - lookbackMinutes * 60_000,
+    notBefore?.getTime() ?? Number.NEGATIVE_INFINITY
+  );
 
   return releases
     .filter((release) => {
@@ -36,6 +39,18 @@ export function selectRecentPublishedReleases(
       (left, right) =>
         Date.parse(left.published_at as string) - Date.parse(right.published_at as string)
     );
+}
+
+export function releasePollingNotBefore(
+  env: Record<string, string | undefined> = process.env
+): Date | null {
+  const raw = env.GITHUB_RELEASES_NOT_BEFORE?.trim();
+  if (!raw) return null;
+  const timestamp = Date.parse(raw);
+  if (!Number.isFinite(timestamp)) {
+    throw new Error("GITHUB_RELEASES_NOT_BEFORE must be an ISO-8601 timestamp");
+  }
+  return new Date(timestamp);
 }
 
 async function listOwnedPublicRepositories(accessToken: string): Promise<GitHubRepoPayload[]> {
@@ -62,7 +77,6 @@ export async function pollRecentGitHubReleases(params: {
   discoveredReleases: number;
   processedReleases: number;
   existingReleases: number;
-  retriedPosts: number;
   deliveryStatus: Record<string, number>;
   errors: Array<{ repository: string; message: string }>;
 }> {
@@ -88,12 +102,10 @@ export async function pollRecentGitHubReleases(params: {
   let processedReleases = 0;
   let existingReleases = 0;
   const selectedSourceKeys = new Set<string>();
+  const notBefore = releasePollingNotBefore();
 
-  for (let index = 0; index < repositories.length; index += 10) {
-    const batch = repositories.slice(index, index + 10);
-    await Promise.all(
-      batch.map(async (repository) => {
-        try {
+  for (const repository of repositories) {
+    try {
           const releases = await githubFetch<GitHubReleaseApiPayload[]>(
             `/repos/${encodeURIComponent(repository.owner.login)}/${encodeURIComponent(repository.name)}/releases?per_page=5`,
             accessToken
@@ -101,7 +113,8 @@ export async function pollRecentGitHubReleases(params: {
           const recent = selectRecentPublishedReleases(
             releases,
             params.now,
-            params.lookbackMinutes
+            params.lookbackMinutes,
+            notBefore
           );
           discoveredReleases += recent.length;
 
@@ -137,26 +150,13 @@ export async function pollRecentGitHubReleases(params: {
             });
             processedReleases += 1;
           }
-        } catch (error) {
-          errors.push({
-            repository: repository.full_name,
-            message: error instanceof Error ? error.message : "Unknown polling error"
-          });
-        }
-      })
-    );
+    } catch (error) {
+      errors.push({
+        repository: repository.full_name,
+        message: error instanceof Error ? error.message : "Unknown polling error"
+      });
+    }
   }
-
-  const failedPosts = selectedSourceKeys.size
-    ? await prisma.post.findMany({
-        where: {
-          status: "FAILED",
-          event: { sourceKey: { in: [...selectedSourceKeys] } }
-        },
-        select: { id: true }
-      })
-    : [];
-  for (const post of failedPosts) await rerunFailedPost(post.id);
 
   const posts = selectedSourceKeys.size
     ? await prisma.post.findMany({
@@ -179,7 +179,6 @@ export async function pollRecentGitHubReleases(params: {
     discoveredReleases,
     processedReleases,
     existingReleases,
-    retriedPosts: failedPosts.length,
     deliveryStatus,
     errors
   };
