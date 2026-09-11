@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { selectRecentPublishedReleases } from "@/lib/services/release-poller";
+import { releasePollingNotBefore, selectRecentPublishedReleases } from "@/lib/services/release-poller";
 
 const now = new Date("2026-09-11T18:00:00Z");
 
@@ -22,5 +22,25 @@ describe("release polling window", () => {
     ];
 
     expect(selectRecentPublishedReleases(releases, now, 180)).toEqual([]);
+  });
+
+  it("does not backfill releases before the deployment baseline", () => {
+    const releases = [
+      { id: 1, tag_name: "v1", published_at: "2026-09-11T17:00:00Z", html_url: "https://example/1", draft: false, prerelease: false },
+      { id: 2, tag_name: "v2", published_at: "2026-09-11T17:45:00Z", html_url: "https://example/2", draft: false, prerelease: false }
+    ];
+    expect(
+      selectRecentPublishedReleases(releases, now, 180, new Date("2026-09-11T17:30:00Z")).map(
+        (release) => release.id
+      )
+    ).toEqual([2]);
+  });
+
+  it("validates the configured deployment baseline", () => {
+    expect(releasePollingNotBefore({ GITHUB_RELEASES_NOT_BEFORE: "2026-09-11T17:30:00Z" }))
+      .toEqual(new Date("2026-09-11T17:30:00Z"));
+    expect(() => releasePollingNotBefore({ GITHUB_RELEASES_NOT_BEFORE: "later" })).toThrow(
+      "ISO-8601"
+    );
   });
 });

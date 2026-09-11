@@ -7,8 +7,8 @@ import { postToBluesky, postToXOrFail, saveSkippedDuplicate, saveSkippedPolicy, 
 import { getShareableRepoUrl } from "@/lib/services/link-shortener";
 import { buildSocialTargetUrl } from "@/lib/services/social-link";
 import type { GitHubCreateTagPayload, GitHubReleasePayload } from "@/types/events";
-import { decryptToken } from "@/lib/services/token-vault";
 import { shouldAutoActivateRepository } from "@/lib/services/repository-policy";
+import { latestValidXAccessToken } from "@/lib/services/x-token";
 
 async function ensureRepository(payload: {
   githubId: string;
@@ -177,17 +177,6 @@ async function composeAndPost(params: {
   });
 }
 
-function latestXAccessToken(
-  accounts: Array<{ provider: string; accessToken: string | null; updatedAt: Date }>
-): string | null | undefined {
-  const xAccounts = accounts
-    .filter((account) => account.provider === "X")
-    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
-
-  const token = xAccounts[0]?.accessToken;
-  return token ? decryptToken(token) : token;
-}
-
 function releaseEventType(params: { releaseTag: string; existingPublishedReleaseCount: number }): EventType {
   if (params.existingPublishedReleaseCount === 0) {
     return EventType.FIRST_PUBLIC_RELEASE;
@@ -282,7 +271,7 @@ export async function handleReleasePublished(payload: GitHubReleasePayload): Pro
     return;
   }
 
-  const xAccessToken = latestXAccessToken(repo.user.connectedAccounts);
+  const xAccessToken = await latestValidXAccessToken(repo.user.connectedAccounts);
   await composeAndPost({
     eventId: base.eventId,
     eventType,
@@ -381,7 +370,7 @@ export async function handleTagCreated(payload: GitHubCreateTagPayload): Promise
     return;
   }
 
-  const xAccessToken = latestXAccessToken(repo.user.connectedAccounts);
+  const xAccessToken = await latestValidXAccessToken(repo.user.connectedAccounts);
   await composeAndPost({
     eventId: created.eventId,
     eventType: EventType.VERSION_TAG,

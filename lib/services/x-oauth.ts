@@ -110,6 +110,59 @@ export async function exchangeXOAuthCode(params: {
   };
 }
 
+export async function refreshXOAuthToken(refreshToken: string): Promise<{
+  accessToken: string;
+  refreshToken?: string;
+  expiresIn?: number;
+}> {
+  const secret = xClientSecret();
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: refreshToken
+  });
+  const headers: Record<string, string> = {
+    "Content-Type": "application/x-www-form-urlencoded"
+  };
+
+  if (secret) {
+    const encodedClientId = encodeURIComponent(xClientId().trim());
+    const encodedSecret = encodeURIComponent(secret.trim());
+    headers.Authorization = `Basic ${Buffer.from(`${encodedClientId}:${encodedSecret}`).toString("base64")}`;
+  } else {
+    body.set("client_id", xClientId().trim());
+  }
+
+  const response = await fetch(`${xApiBase()}/oauth2/token`, {
+    method: "POST",
+    headers,
+    body: body.toString()
+  });
+  const raw = await response.text();
+  let json: unknown = null;
+  if (raw) {
+    try {
+      json = JSON.parse(raw) as unknown;
+    } catch {
+      json = null;
+    }
+  }
+  if (!response.ok) {
+    const message =
+      typeof (json as { error_description?: string } | null)?.error_description === "string"
+        ? (json as { error_description: string }).error_description
+        : `X OAuth refresh failed (${response.status})`;
+    throw new Error(message);
+  }
+
+  const payload = json as { access_token?: string; refresh_token?: string; expires_in?: number };
+  if (!payload.access_token) throw new Error("X OAuth refresh response missing access_token");
+  return {
+    accessToken: payload.access_token,
+    refreshToken: payload.refresh_token,
+    expiresIn: payload.expires_in
+  };
+}
+
 export async function fetchXMe(accessToken: string): Promise<{ id: string; username?: string }> {
   const response = await fetch(`${xApiBase()}/users/me`, {
     headers: {

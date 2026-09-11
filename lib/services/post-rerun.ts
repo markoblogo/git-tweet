@@ -1,18 +1,7 @@
 import { PostDestination, PostStatus } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { publishToBluesky, publishToX } from "@/lib/services/posting";
-import { decryptToken } from "@/lib/services/token-vault";
-
-function latestXAccessToken(
-  accounts: Array<{ provider: string; accessToken: string | null; updatedAt: Date }>
-): string | null | undefined {
-  const xAccounts = accounts
-    .filter((account) => account.provider === "X")
-    .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
-
-  const token = xAccounts[0]?.accessToken;
-  return token ? decryptToken(token) : token;
-}
+import { latestValidXAccessToken } from "@/lib/services/x-token";
 
 export function isRerunnableStatus(status: PostStatus): boolean {
   return status === PostStatus.FAILED || status === PostStatus.POSTED;
@@ -64,7 +53,7 @@ export async function rerunFailedPost(postId: string): Promise<{
       ? await publishToX({
           text: post.text,
           warning: `${post.status === PostStatus.POSTED ? "manual_resend_from" : "manual_rerun_from"}:${post.id}`,
-          xAccessToken: latestXAccessToken(post.event.repository.user.connectedAccounts)
+          xAccessToken: await latestValidXAccessToken(post.event.repository.user.connectedAccounts)
         })
       : await publishToBluesky({
           text: post.text,
