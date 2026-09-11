@@ -65,3 +65,15 @@ stored repositories, events, logs, and connected-account records.
   `GIT_TWEET_CRON_SECRET`.
 - **Duplicate or tag event is skipped:** inspect the recorded policy reason in
   `/logs`; release events intentionally take precedence over matching tags.
+
+## Targeted X retry
+
+An operator can retry one failed X delivery without reposting to Bluesky:
+
+```sh
+curl --fail-with-body -X POST \
+  -H "Authorization: Bearer $CRON_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"repository":"owner/repository","releaseTag":"v1.2.3"}' \
+  "$APP_URL/api/operations/retry-release"
+```
