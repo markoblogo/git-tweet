@@ -33,7 +33,7 @@ export default async function HomePage() {
           <span className="eyebrow">Personal workflow stage</span>
           <h1>Low-noise GitHub milestones to social posts.</h1>
           <p className="hero-text">
-            git-tweet watches the public repositories you explicitly activate and publishes only meaningful
+            git-tweet watches public repositories enabled by your operator policy or ABVX ecosystem registry and publishes meaningful
             release milestones: first releases, major versions, standard releases, and semver tags.
           </p>
           <p className="hero-subtext">
@@ -49,7 +49,7 @@ export default async function HomePage() {
           </div>
           <ul className="hero-points">
             <li>Public repos only</li>
-            <li>Inactive by default after sync</li>
+            <li>Registry and owner allowlists</li>
             <li>Release wins over tag for the same version</li>
           </ul>
 

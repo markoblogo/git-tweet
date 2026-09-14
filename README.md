@@ -123,6 +123,7 @@ To cover every current and future public repository owned by your account, set:
 ```sh
 GITHUB_AUTO_ACTIVATE_OWNERS="your-github-login"
 GITHUB_RELEASES_NOT_BEFORE="2026-09-11T18:30:00Z"
+ABVX_ECOSYSTEM_REGISTRY_URL="https://abvx.xyz/ecosystem.json"
 CRON_SECRET="a-long-random-value"
 ```
 
@@ -132,6 +133,10 @@ repositories and missed deliveries. This repository includes an hourly GitHub
 Actions poll and a daily Vercel Cron fallback.
 Set `GITHUB_RELEASES_NOT_BEFORE` when enabling fleet coverage so old releases
 are not published retroactively. Polling processes eligible releases one at a time.
+When `ABVX_ECOSYSTEM_REGISTRY_URL` is configured, it is an additional fail-closed
+allowlist: only public nodes with `propagation.releaseSocial=true` are eligible.
+Leave it unset to retain owner-wide discovery for new repositories that have not
+yet entered the ABVX ecosystem graph.
 
 For immediate announcements, add the same webhook to each public repository:
 

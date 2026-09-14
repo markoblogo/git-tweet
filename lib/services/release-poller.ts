@@ -4,6 +4,7 @@ import { githubFetch, type GitHubRepoPayload } from "@/lib/services/github-clien
 import { handleReleasePublished } from "@/lib/services/github-ingestion";
 import { autoActivateOwners } from "@/lib/services/repository-policy";
 import { decryptToken } from "@/lib/services/token-vault";
+import { loadReleaseSocialRepositories } from "@/lib/services/ecosystem-registry";
 
 export type GitHubReleaseApiPayload = {
   id: number;
@@ -94,8 +95,12 @@ export async function pollRecentGitHubReleases(params: {
   }
 
   const accessToken = decryptToken(account.accessToken);
+  const releaseSocialRepositories = await loadReleaseSocialRepositories();
   const repositories = (await listOwnedPublicRepositories(accessToken)).filter(
-    (repository) => !repository.private && owners.has(repository.owner.login.toLowerCase())
+    (repository) =>
+      !repository.private &&
+      owners.has(repository.owner.login.toLowerCase()) &&
+      (!releaseSocialRepositories || releaseSocialRepositories.has(repository.full_name.toLowerCase()))
   );
   const errors: Array<{ repository: string; message: string }> = [];
   let discoveredReleases = 0;
