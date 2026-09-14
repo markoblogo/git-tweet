@@ -163,6 +163,11 @@ Set `BLUESKY_ENABLED=true`, `BLUESKY_HANDLE`, and a Bluesky app password in
 `BLUESKY_APP_PASSWORD`. The main account password is neither required nor
 recommended.
 
+For ABVX Shortener, set `SHORTENER_ENABLED=true`, point
+`SHORTENER_API_URL` to `/api/shorten`, and configure the dedicated
+`SHORTENER_API_KEY` with `SHORTENER_API_KEY_ID=git-tweet`. Shortener failure
+keeps the canonical GitHub URL and does not block publication.
+
 ## Post policy
 
 Supported signals:

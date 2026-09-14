@@ -35,6 +35,7 @@ function shortenerConfig() {
   const enabled = parseBoolean(process.env.SHORTENER_ENABLED);
   const endpoint = process.env.SHORTENER_API_URL;
   const apiKey = process.env.SHORTENER_API_KEY;
+  const apiKeyId = process.env.SHORTENER_API_KEY_ID;
   const publicBaseUrl = process.env.SHORTENER_PUBLIC_BASE_URL;
   const timeoutMs = Number(process.env.SHORTENER_TIMEOUT_MS ?? "2000");
 
@@ -42,6 +43,7 @@ function shortenerConfig() {
     enabled,
     endpoint,
     apiKey,
+    apiKeyId,
     publicBaseUrl,
     timeoutMs: Number.isFinite(timeoutMs) && timeoutMs > 0 ? timeoutMs : 2000
   };
@@ -71,7 +73,8 @@ export async function getShareableRepoUrl(originalUrl: string): Promise<Shortene
       method: "POST",
       headers: {
         "content-type": "application/json",
-        ...(config.apiKey ? { authorization: `Bearer ${config.apiKey}` } : {})
+        ...(config.apiKey ? { "X-API-Key": config.apiKey } : {}),
+        ...(config.apiKeyId ? { "X-API-Key-Id": config.apiKeyId } : {})
       },
       body: JSON.stringify({ url: originalUrl }),
       signal: controller.signal

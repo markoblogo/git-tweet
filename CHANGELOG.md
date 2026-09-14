@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-09-14
+
+### Fixed
+
+- Send ABVX Shortener credentials through its documented `X-API-Key` and `X-API-Key-Id` headers.
+- Preserve canonical GitHub URLs when the isolated writer integration is unavailable.
+
 ## [0.4.0] - 2026-09-14
 
 ### Added
@@ -56,6 +63,7 @@
 - Database-backed pages no longer require a live database during the production build.
 - Admin cookies follow the configured HTTPS application URL, so localhost Docker sessions remain usable.
 
+[0.4.1]: https://github.com/markoblogo/git-tweet/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/markoblogo/git-tweet/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/markoblogo/git-tweet/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/markoblogo/git-tweet/compare/v0.3.0...v0.3.1
