@@ -26,19 +26,28 @@ describe("getShareableRepoUrl", () => {
     process.env.SHORTENER_ENABLED = "true";
     process.env.SHORTENER_API_URL = "https://shortener.local/api/shorten";
     process.env.SHORTENER_PUBLIC_BASE_URL = "https://go.abvx.xyz/";
+    process.env.SHORTENER_API_KEY = "release-writer";
+    process.env.SHORTENER_API_KEY_ID = "git-tweet";
 
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue({
+    const request = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ shortUrl: "https://go.abvx.xyz/abc123" })
-      })
-    );
+      });
+    vi.stubGlobal("fetch", request);
 
     const result = await getShareableRepoUrl("https://github.com/markoblogo/git-tweet");
     expect(result.url).toBe("https://go.abvx.xyz/abc123");
     expect(result.shortened).toBe(true);
     expect(result.provider).toBe("abvx-shortener");
+    expect(request).toHaveBeenCalledWith(
+      "https://shortener.local/api/shorten",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          "X-API-Key": "release-writer",
+          "X-API-Key-Id": "git-tweet"
+        })
+      })
+    );
   });
 
   it("falls back to original url when shortener fails", async () => {
