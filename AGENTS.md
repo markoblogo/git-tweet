@@ -12,7 +12,7 @@ release webhooks into deterministic posts for X and Bluesky.
 - Apply production migrations: `npm run db:deploy`
 - Self-host: `docker compose up --build`
 
-Keep posting conservative: public and explicitly activated repositories only,
+Keep posting conservative: public repositories enabled by the ABVX ecosystem registry or the owner allowlist only,
 release signals before tag fallbacks, and independent destination records.
 Never log or commit OAuth tokens, app passwords, webhook secrets, admin
 passwords, or token-encryption keys.

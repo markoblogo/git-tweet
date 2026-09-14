@@ -94,7 +94,7 @@ export default async function RepositoriesPage({ searchParams }: Props) {
   return (
     <section>
       <h1>Repositories</h1>
-      <p>Select repositories where git-tweet is active (public repositories only).</p>
+      <p>Review repositories where git-tweet is active (public repositories only). The ABVX registry may activate enrolled repositories automatically.</p>
       <p>
         Current filter: <strong>{filterLabel(filter)}</strong>
       </p>

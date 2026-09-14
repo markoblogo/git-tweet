@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-14
+
+### Added
+
+- Optional fail-closed release allowlist from the public ABVX ecosystem registry.
+- Automatic alignment between `releaseSocial` policy on `abvx.xyz` and the repositories scanned by the release poller.
+
+## [0.3.2] - 2026-09-11
+
 ### Changed
 
 - Public repositories owned by `GITHUB_AUTO_ACTIVATE_OWNERS` now activate automatically.
@@ -47,5 +56,7 @@
 - Database-backed pages no longer require a live database during the production build.
 - Admin cookies follow the configured HTTPS application URL, so localhost Docker sessions remain usable.
 
+[0.4.0]: https://github.com/markoblogo/git-tweet/compare/v0.3.2...v0.4.0
+[0.3.2]: https://github.com/markoblogo/git-tweet/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/markoblogo/git-tweet/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/markoblogo/git-tweet/compare/v0.2.0...v0.3.0
