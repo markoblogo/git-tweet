@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { autonomousJobsEnabled } from "@/lib/services/autonomous-jobs";
 import { z } from "zod";
 import { handleReleasePublished, handleTagCreated } from "@/lib/services/github-ingestion";
 import { verifyGitHubSignature } from "@/lib/services/github-webhook-auth";
@@ -37,6 +38,10 @@ export async function POST(request: Request) {
 
   if (!isValidSignature) {
     return NextResponse.json({ ok: false, error: "Invalid webhook signature" }, { status: 401 });
+  }
+
+  if (!autonomousJobsEnabled()) {
+    return NextResponse.json({ ok: true, paused: true, reason: "Autonomous jobs are disabled" });
   }
 
   let body: unknown;

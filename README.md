@@ -129,8 +129,9 @@ CRON_SECRET="a-long-random-value"
 
 The signed webhook remains the immediate path. `GET /api/cron/releases`,
 authenticated with `Authorization: Bearer <CRON_SECRET>`, recovers new
-repositories and missed deliveries. This repository includes an hourly GitHub
-Actions poll and a daily Vercel Cron fallback.
+repositories and missed deliveries. Autonomous cron and webhook ingestion are paused by default. Set
+`AUTONOMOUS_JOBS_ENABLED=true` only when automatic processing is intended.
+The GitHub Actions poll is manual-only and Vercel cron schedules are empty.
 Set `GITHUB_RELEASES_NOT_BEFORE` when enabling fleet coverage so old releases
 are not published retroactively. Polling processes eligible releases one at a time.
 When `ABVX_ECOSYSTEM_REGISTRY_URL` is configured, it is an additional fail-closed

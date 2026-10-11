@@ -77,3 +77,11 @@ curl --fail-with-body -X POST \
   -d '{"repository":"owner/repository","releaseTag":"v1.2.3"}' \
   "$APP_URL/api/operations/retry-release"
 ```
+
+## Passive operation
+
+Default operation is live on demand, with cron/webhook ingestion paused. Missing or any value other than exact `AUTONOMOUS_JOBS_ENABLED=true` returns `{ok:true, paused:true}` after normal authentication, without polling GitHub, accessing the ingestion database, shortening links, or posting. The health endpoint, UI and explicit admin actions remain available. Signed webhook events received while paused are acknowledged and **not queued**. A later opt-in may discover eligible releases again; review `GITHUB_RELEASES_NOT_BEFORE` before resuming.
+
+The repository has no automatic polling schedule: GitHub Actions is `workflow_dispatch` only and `vercel.json` has empty `crons`. Removing Vercel schedules requires an explicitly approved production deployment; a PR alone does not pause the existing deployment. For an approved immediate pause, disable the existing Poll releases Actions workflow and set `AUTONOMOUS_JOBS_ENABLED=false` on the deployment containing this guard. Do not assume setting that variable on old code pauses anything.
+
+Keep both Railway databases and their volumes until each consumer and backup is identified. PostgreSQL maintenance is normal service operation; passive application mode does not stop database processes or hosting charges. No migration or data deletion is needed for this change. Re-enable ingestion only with an explicit operator decision; leave schedules absent unless recurring work is wanted again.
