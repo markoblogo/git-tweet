@@ -24,10 +24,10 @@ stack starts. Restart the app after changing a value.
 | `GITHUB_OAUTH_SCOPE` | No | Defaults to `read:user public_repo`. |
 | `GITHUB_AUTO_ACTIVATE_OWNERS` | No | Comma-separated owners whose public repositories activate automatically. Private repositories remain blocked. |
 | `GITHUB_RELEASES_NOT_BEFORE` | Recommended | ISO-8601 deployment baseline. Polling never backfills releases published before it. |
+| `AUTONOMOUS_JOBS_ENABLED` | No | Exact `true` enables authenticated cron and signed-webhook ingestion. Missing/false keeps both paused. |
 | `CRON_SECRET` | For polling | Bearer token protecting `GET /api/cron/releases`; Vercel Cron supplies it automatically. |
 
-For the included hourly GitHub Actions poll, store the same `CRON_SECRET` as
-the repository Actions secret `GIT_TWEET_CRON_SECRET`.
+The GitHub Actions polling workflow is manual-only and Vercel cron schedules are empty. Store `CRON_SECRET` as the repository Actions secret `GIT_TWEET_CRON_SECRET` for explicit manual calls. Calls remain paused unless `AUTONOMOUS_JOBS_ENABLED=true`.
 
 ## X
 

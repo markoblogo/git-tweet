@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { autonomousJobsEnabled } from "@/lib/services/autonomous-jobs";
 import { isCronAuthorized } from "@/lib/services/cron-auth";
 import { pollRecentGitHubReleases } from "@/lib/services/release-poller";
 
@@ -10,6 +11,10 @@ export async function GET(request: Request) {
   }
   if (!isCronAuthorized(request.headers.get("authorization"))) {
     return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!autonomousJobsEnabled()) {
+    return NextResponse.json({ ok: true, paused: true, reason: "Autonomous jobs are disabled" });
   }
 
   try {
