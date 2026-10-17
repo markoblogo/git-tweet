@@ -183,7 +183,7 @@ pull requests, branches, issues, and stars do not publish posts. The generated
 message contains the event, project name, one-line description, stable
 repository URL, and at most two normalized topic hashtags.
 
-## Test without publishing
+## Preview and isolated webhook tests
 
 ```sh
 npm run preview
@@ -191,10 +191,11 @@ npm run replay:release
 npm run replay:tag
 ```
 
-Preview never writes to the database or a network. Replay signs the included
-fixture with `GITHUB_WEBHOOK_SECRET` and exercises ingestion, policy, dedup,
-posting adapters, and logs. A real end-to-end acceptance still requires a
-public webhook URL and configured destination credentials.
+Preview never writes to the database or a network. Replay sends a signed fixture to a running server and can write to its database and configured posting destinations; it is not a dry run. Use an isolated test database and mock/test destination credentials, never the production URL or credentials.
+
+The default `AUTONOMOUS_JOBS_ENABLED=false` pauses replay too. A paused, ignored, or failed response makes the replay command exit unsuccessfully. To exercise ingestion, set `AUTONOMOUS_JOBS_ENABLED=true` **only on the isolated test server**, restart it, then run the replay commands. Restore `false` and restart after testing. No replay bypass is provided on production.
+
+An accepted response proves the fixture reached its ingestion handler. Deduplication or policy may still prevent posting; inspect test logs/database to verify those outcomes. A real end-to-end acceptance requires a test webhook URL and configured test destination credentials.
 
 ## Security and upgrades
 

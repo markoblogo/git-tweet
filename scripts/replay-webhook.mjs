@@ -2,6 +2,7 @@
 import { createHmac } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { assertReplayAccepted } from "./replay-response.mjs";
 
 function parseArgs(argv) {
   const args = Object.fromEntries(
@@ -47,6 +48,7 @@ async function main() {
 
   const text = await response.text();
   console.log(JSON.stringify({ status: response.status, body: text }, null, 2));
+  assertReplayAccepted(response.status, text, event);
 }
 
 main().catch((error) => {
